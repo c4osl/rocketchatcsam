@@ -1,14 +1,14 @@
 PhotoDNA CSEM scanning App
 ==========================
 
-This [Rocket.Chat App](https://developer.rocket.chat/apps-engine/) validates uploaded images against the [Microsoft PhotoDNA cloud service](https://www.microsoft.com/en-us/photodna), moves them to a quarantine channel or deletes them before they are shown, and, when configured to do so, reports each match to the National Center for Missing and Exploited Children (NCMEC).
+This [Rocket.Chat App](https://developer.rocket.chat/docs/rocketchat-apps-engine) validates uploaded images against the [Microsoft PhotoDNA cloud service](https://www.microsoft.com/en-us/photodna), moves them to a quarantine channel or deletes them before they are shown, and, when configured to do so, reports each match to the National Center for Missing and Exploited Children (NCMEC).
 
 Prerequisites
 =============
 
 * Git
 * Node.js version 22 or newer (required by `@rocket.chat/apps-compiler`, which `rc-apps package`/`deploy` depend on)
-* [Rocket.Chat Apps-Engine CLI](https://developer.rocket.chat/apps-engine/getting-started/rocket.chat-app-engine-cli)
+* [Rocket.Chat Apps-Engine CLI](https://developer.rocket.chat/docs/getting-started-with-apps-engine)
 * A Rocket.Chat server version 3.8.0 or newer
 
 Installation
@@ -98,9 +98,9 @@ If you're trying to use `npm` in PowerShell and a package has an @ symbol in the
 _-J. F. Gaulter 2023-12-31_
 
 
-Preventing child sexual abuse
-=============================
-For information on protecting your users who are at risk of being caught up in child sexual abuse, either as a victim or as a potential perpetrator, [Prostasia Foundation](https://prostasia.org) can help. We offer consulting services to platforms to help them eliminate abuse without interfering with the free speech of legitimate users. Our [Get Help page](https://prostasia.org/get-help) also offers a variety of support options for users, including the MAP Support Chat forum for which this app was originally developed.
+Acknowledgements
+================
+This app was originally developed under Prostasia Foundation, which has since ceased operations. This project continues to be funded by the [Center for Online Safety and Liberty (COSL)](https://c4osl.org/), which also funded Prostasia. If you'd like to support COSL's work, see their [Support Us](https://c4osl.org/support-us/) page.
 
 Changelog
 =========
@@ -125,12 +125,3 @@ Changelog
   * Modernized tooling: updated @types/node and typescript to current versions, migrated linting from tslint to eslint
   * Upgraded @rocket.chat/apps-engine from ^1.19.0 to ^1.64.1, resolving all npm audit vulnerabilities
   * Restructured source files into config/ and lib/ folders; no behavior changes
-
-Todos / Caveat
-==============
-
-* Currently the user posting the matching image does not see any actions happening, just the message not occuring.
-* The images are transported to the Microsoft PhotoDNA Service. The Edge-Hash algorithm is not implemented.
-* App logging is too verbose at the moment https://github.com/RocketChat/Rocket.Chat/issues/13312
-* Real user IP is not available for automated report functionality https://github.com/RocketChat/feature-requests/issues/433
-* If the PhotoDNA API request occurs while the server is momentarily disconnected from the network, the result of the call will be undefined. It will not appear as a match, and the App will let the image through, even though it has not been confirmed to _not_ match.
