@@ -7,7 +7,7 @@ Prerequisites
 =============
 
 * Git
-* Node.js (version 12 and above)
+* Node.js version 22 or newer (required by `@rocket.chat/apps-compiler`, which `rc-apps package`/`deploy` depend on)
 * [Rocket.Chat Apps-Engine CLI](https://developer.rocket.chat/apps-engine/getting-started/rocket.chat-app-engine-cli)
 * A Rocket.Chat server version 3.8.0 or newer
 
@@ -91,10 +91,9 @@ Setting up a local Rocket.Chat instance for testing and debugging is [very easy 
 
 If you're trying to use `npm` in PowerShell and a package has an @ symbol in the name, be sure to quote the package name, otherwise PowerShell may interpret the @ as the splat operator.
 
-`@rocket.chat/apps-cli@1.11.0` uses a custom TypeScript transpiler, `@rocket.chat/apps-compiler@0.4.0`, which currently has a bug that affects this project. When you run `rc-apps package` or `rc-apps deploy`, it fails with `TypeError: PhotoDNACloudService_1.PhotoDNACloudService is not a constructor`. I was able to temporarily work around this by opening TypescriptCompiler.js and commenting out line 151.
-* Line 151: `this.appValidator.checkInheritance(appInfo.classFile.replace(/\.ts$/, ''), result);`
-* Location on Windows: `%AppData%\npm\node_modules\@rocket.chat\apps-cli\node_modules\@rocket.chat\apps-compiler\compiler\TypescriptCompiler.js`
-* Location on *nix: `$(npm list -g | head -1)/node_modules/@rocket.chat/apps-cli/node_modules/@rocket.chat/apps-compiler/compiler/TypescriptCompiler.js`
+`@rocket.chat/apps-cli@1.14.0`'s bundled `@rocket.chat/apps-compiler@0.7.0` has a pre-existing bug (confirmed to reproduce on a clean, untouched checkout, so it's not specific to this app) that affects any App with a class in its own file that's instantiated in the main App class's constructor: `AppsEngineValidator.compiledRequire()` incorrectly unwraps modules that have exactly one export, returning the bare class instead of the module's exports object. This surfaces as `TypeError: <SomeClass>_1.<SomeClass> is not a constructor` when running `rc-apps package` or `rc-apps deploy`. It only affects that one packaging-time sanity check, not the actual compiled app or how a real Rocket.Chat server runs it. Workaround: comment out the `this.appValidator.checkInheritance(...)` call in `TypescriptCompiler.js` (around line 172 as of `apps-compiler@0.7.0`; the exact line drifts between versions).
+* If installed globally: `%AppData%\npm\node_modules\@rocket.chat\apps-cli\node_modules\@rocket.chat\apps-compiler\compiler\TypescriptCompiler.js` (Windows) or `$(npm list -g | head -1)/node_modules/@rocket.chat/apps-cli/node_modules/@rocket.chat/apps-compiler/compiler/TypescriptCompiler.js` (*nix)
+* If run via `npx`, it's cached instead, e.g. `%LocalAppData%\npm-cache\_npx\<hash>\node_modules\@rocket.chat\apps-compiler\compiler\TypescriptCompiler.js` on Windows — find the exact path with `npx --yes @rocket.chat/apps-cli --version` and checking npm's npx cache directory.
 
 _-J. F. Gaulter 2023-12-31_
 
@@ -123,7 +122,9 @@ Changelog
 * 0.3.3
   * Implemented setting to watch all direct rooms (DMs)
 * 0.3.4
-  * Migrated linting from tslint to eslint
+  * Modernized tooling: updated @types/node and typescript to current versions, migrated linting from tslint to eslint
+  * Upgraded @rocket.chat/apps-engine from ^1.19.0 to ^1.64.1, resolving all npm audit vulnerabilities
+  * Restructured source files into config/ and lib/ folders; no behavior changes
 
 Todos / Caveat
 ==============
