@@ -10,7 +10,7 @@ import {
     IConfigurationModify,
 } from '@rocket.chat/apps-engine/definition/accessors';
 import { App } from '@rocket.chat/apps-engine/definition/App';
-import { IMessage, IPostMessageSent, IPreMessageSentPrevent, IPreMessageSentModify } from '@rocket.chat/apps-engine/definition/messages';
+import { IMessage, IPreMessageSentModify } from '@rocket.chat/apps-engine/definition/messages';
 import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
 import { SettingType, ISetting } from '@rocket.chat/apps-engine/definition/settings';
 
@@ -28,12 +28,12 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
     private watchedRoomsId: Set<string> | undefined;
     private watchDMs: boolean;
 
-    constructor(info: IAppInfo, logger: ILogger, accessors: IAppAccessors) {
+    public constructor(info: IAppInfo, logger: ILogger, accessors: IAppAccessors) {
         super(info, logger, accessors);
         this.photoDnaService = new PhotoDNACloudService();
     }
 
-    protected async extendConfiguration(configuration: IConfigurationExtend, environmentRead: IEnvironmentRead): Promise<void> {
+    protected async extendConfiguration(configuration: IConfigurationExtend, _environmentRead: IEnvironmentRead): Promise<void> {
         await configuration.settings.provideSetting({
             id: SETTING_PHOTODNA_API_KEY,
             type: SettingType.STRING,
@@ -135,16 +135,16 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         });
     }
 
-    public async onEnable(environment: IEnvironmentRead, configurationModify: IConfigurationModify): Promise<boolean> {
+    public async onEnable(environment: IEnvironmentRead, _configurationModify: IConfigurationModify): Promise<boolean> {
         this.quarantineChannel = await environment.getSettings().getValueById(SETTING_QUARANTINE_CHANNEL);
         this.enableAutomatedReport = await environment.getSettings().getValueById(SETTING_ENABLE_AUTOMATED_REPORT);
-        let limitRoomNamesCsv = await environment.getSettings().getValueById(SETTING_LIMIT_ANALYSIS_TO_CHANNELS);
+        const limitRoomNamesCsv = await environment.getSettings().getValueById(SETTING_LIMIT_ANALYSIS_TO_CHANNELS);
         this.initLimitRoomNamesSet(limitRoomNamesCsv);
         this.watchDMs = await environment.getSettings().getValueById(SETTING_WATCH_DMS);
         return true;
     }
 
-    public async onSettingUpdated(setting: ISetting, configurationModify: IConfigurationModify, read: IRead, http: IHttp): Promise<void> {
+    public async onSettingUpdated(setting: ISetting, _configurationModify: IConfigurationModify, _read: IRead, _http: IHttp): Promise<void> {
         if (SETTING_QUARANTINE_CHANNEL === setting.id) {
             this.quarantineChannel = setting.value;
         } else if (SETTING_LIMIT_ANALYSIS_TO_CHANNELS === setting.id) {
@@ -160,28 +160,28 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         this.watchedRoomsId = undefined;
         if (limitRoomNamesCsv && limitRoomNamesCsv.length > 0) {
             this.watchedRoomsId = new Set<string>();
-            let _csvRoomNames = limitRoomNamesCsv.trim();
-            let _csvRoomsArray = _csvRoomNames.split(',');
+            const _csvRoomNames = limitRoomNamesCsv.trim();
+            const _csvRoomsArray = _csvRoomNames.split(',');
             for (const roomName of _csvRoomsArray) {
                 const room = await this.getAccessors().reader.getRoomReader().getByName(roomName.toLowerCase());
                 if (room) {
-                    this.getLogger().debug(`Watching room \'${roomName}\'`);
+                    this.getLogger().debug(`Watching room '${roomName}'`);
                     this.watchedRoomsId!.add(room.id);
                 } else {
-                    this.getLogger().warn(`Room not found for name \'${roomName}\'. Not adding to watch list.`);
+                    this.getLogger().warn(`Room not found for name '${roomName}'. Not adding to watch list.`);
                 }
             }
         }
     }
 
-    async checkPreMessageSentModify(message: IMessage, read: IRead, http: IHttp): Promise<boolean> {
+    public async checkPreMessageSentModify(message: IMessage, _read: IRead, _http: IHttp): Promise<boolean> {
         // https://developer.rocket.chat/reference/api/schema-definition/room
         const roomTypes = {
             dm: 'd',
             chatroom: 'c',
             private: 'p',
-            livechat: 'l'
-        }
+            livechat: 'l',
+        };
         if (
             this.watchedRoomsId === undefined
             || this.watchedRoomsId.size === 0
@@ -194,17 +194,37 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         }
     }
 
-    async executePreMessageSentModify(message: IMessage, builder: IMessageBuilder, read: IRead, http: IHttp, persistence: IPersistence): Promise<IMessage> {
-        let logger = this.getLogger();
-        let result = await this.photoDnaService.matchMessage(message, logger, read, http);
+    public async executePreMessageSentModify(
+        message: IMessage,
+        builder: IMessageBuilder,
+        read: IRead,
+        http: IHttp,
+        persistence: IPersistence,
+    ): Promise<IMessage> {
+        const logger = this.getLogger();
+        const result = await this.photoDnaService.matchMessage(message, logger, read, http);
         if (result && result.IsMatch) {
             this.handleMatchingMessage(result, message, read, persistence, builder, http, logger);
         }
         return builder.getMessage();
     }
 
-    private async handleMatchingMessage(matchResult: IMatchResult, message: IMessage, read: IRead, persistence: IPersistence, builder: IMessageBuilder, http: IHttp, logger: ILogger): Promise<void> {
-        logger.warn('CSEM-MATCH', `enable automated report: ${this.enableAutomatedReport}`, `message ID: ${message.id}`, message.sender, JSON.stringify(matchResult));
+    private async handleMatchingMessage(
+        matchResult: IMatchResult,
+        message: IMessage,
+        read: IRead,
+        persistence: IPersistence,
+        builder: IMessageBuilder,
+        http: IHttp,
+        logger: ILogger,
+    ): Promise<void> {
+        logger.warn(
+            'CSEM-MATCH',
+            `enable automated report: ${this.enableAutomatedReport}`,
+            `message ID: ${message.id}`,
+            message.sender,
+            JSON.stringify(matchResult),
+        );
 
         if (this.quarantineChannel) {
             const targetRoom: IRoom | undefined = await read.getRoomReader().getByName(this.quarantineChannel);
@@ -222,7 +242,7 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         }
 
         if (this.enableAutomatedReport) {
-            let result = await this.photoDnaService.performReportOperation(matchResult, http, message, read);
+            const result = await this.photoDnaService.performReportOperation(matchResult, http, message, read);
             logger.warn('Violation-Report-Result', result);
         }
     }

@@ -1,4 +1,4 @@
-import { IImageData } from "./IImageData";
+import { IImageData } from './IImageData';
 
 export interface IMatchResult {
     Status: IMatchOperationStatus;

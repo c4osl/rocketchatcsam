@@ -1,8 +1,8 @@
-import { IHttp, ILogger, IRead } from "@rocket.chat/apps-engine/definition/accessors";
-import { IImageData } from "./IImageData";
-import { IMatchResult } from "./IMatchResult";
-import { IMessage } from "@rocket.chat/apps-engine/definition/messages";
-import { SETTING_PHOTODNA_API_KEY, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from "../Settings";
+import { IHttp, ILogger, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IImageData } from './IImageData';
+import { IMatchResult } from './IMatchResult';
+import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
+import { SETTING_PHOTODNA_API_KEY, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from '../Settings';
 
 /**
  * Microsoft PhotoDNA cloud service
@@ -19,7 +19,7 @@ export class PhotoDNACloudService {
      * @param message
      * @param logger
      */
-    async preMatchMessage(message: IMessage, logger: ILogger): Promise<boolean> {
+    public async preMatchMessage(message: IMessage, logger: ILogger): Promise<boolean> {
         // is there an attachment ?
         if (!message.attachments) {
             return false;
@@ -29,8 +29,8 @@ export class PhotoDNACloudService {
             return false;
         }
 
-        var imageAttachment: any = message.attachments[0];
-        let imageMimeType = imageAttachment.imageType;
+        const imageAttachment: any = message.attachments[0];
+        const imageMimeType = imageAttachment.imageType;
         // does the PhotoDNA service support this attachment ?
         if (!this.isSupportedImageMimeType(imageMimeType)) {
             logger.warn('Could not perform match operation on unsupported image type ' + imageMimeType);
@@ -47,20 +47,20 @@ export class PhotoDNACloudService {
      * @param read
      * @param http
      */
-    async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<IMatchResult | undefined> {
-        var imageAttachment: any = message.attachments![0];
-        let imageMimeType = imageAttachment.imageType;
-        let imageFileName = imageAttachment.title.value;
+    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<IMatchResult | undefined> {
+        const imageAttachment: any = message.attachments![0];
+        const imageMimeType = imageAttachment.imageType;
+        const imageFileName = imageAttachment.title.value;
         // determine image id and load it
-        let imageId = imageAttachment.imageUrl.substring(0, imageAttachment.imageUrl.lastIndexOf('/')).replace('/file-upload/', '')
+        const imageId = imageAttachment.imageUrl.substring(0, imageAttachment.imageUrl.lastIndexOf('/')).replace('/file-upload/', '')
         // TODO better way to find image id?
-        let imageBuffer = await read.getUploadReader().getBufferById(imageId)
+        const imageBuffer = await read.getUploadReader().getBufferById(imageId)
         if (!imageBuffer) {
             logger.warn('Could not load image buffer for image id ' + imageId);
             return undefined;
         }
 
-        let result = await this.performMatchOperation(http, read, {
+        const result = await this.performMatchOperation(http, read, {
             contentType: imageMimeType,
             filename: imageFileName,
             data: imageBuffer
@@ -79,16 +79,16 @@ export class PhotoDNACloudService {
     private async performMatchOperation(http: IHttp, read: IRead, imageData: IImageData, logger: ILogger): Promise<IMatchResult | undefined> {
         const apiKey = await read.getEnvironmentReader().getSettings().getValueById(SETTING_PHOTODNA_API_KEY);
         if (!apiKey) {
-            logger.warn("SETTING_PHOTODNA_API_KEY was not found in environment.")
+            logger.warn('SETTING_PHOTODNA_API_KEY was not found in environment.')
             return undefined;
         }
 
-        let content = JSON.stringify({
-            "DataRepresentation": "inline",
-            "Value": imageData.data.toString('base64')
+        const content = JSON.stringify({
+            'DataRepresentation': 'inline',
+            'Value': imageData.data.toString('base64')
         })
 
-        let result = await http.post(this.Match_Post_Url, {
+        const result = await http.post(this.Match_Post_Url, {
             content,
             params: {
                 'enhance': 'false'
@@ -105,12 +105,12 @@ export class PhotoDNACloudService {
         }
 
         if (!result.data) {
-            logger.warn(`We received a response from the API, but it does not contain data.`);
+            logger.warn('We received a response from the API, but it does not contain data.');
             return undefined;
         }
 
-        logger.debug(`We received data back from the API:`, result.data);
-        let matchResult = result.data as IMatchResult;
+        logger.debug('We received data back from the API:', result.data);
+        const matchResult = result.data as IMatchResult;
         matchResult.ImageData = imageData;
         return matchResult;
     }
@@ -132,29 +132,29 @@ export class PhotoDNACloudService {
         const ncmecReporterEmail = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_REPORTER_EMAIL);
         const enableTestMode = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_ENABLE_TEST_MODE);
         if (apiKey && ncmecUser && ncmecPassword) {
-            let content = JSON.stringify({
-                "OrgName": ncmecOrgName,
-                "ReporterName": ncmecReporterName,
-                "ReporterEmail": ncmecReporterEmail,
-                "IncidentTime": (message.createdAt) ? message.createdAt.toISOString() : "",
-                "ReporteeName": message.sender.username,
-                "ReporteeIPAddress": "127.0.0.1",
-                "ViolationContentCollection": [
+            const content = JSON.stringify({
+                'OrgName': ncmecOrgName,
+                'ReporterName': ncmecReporterName,
+                'ReporterEmail': ncmecReporterEmail,
+                'IncidentTime': (message.createdAt) ? message.createdAt.toISOString() : '',
+                'ReporteeName': message.sender.username,
+                'ReporteeIPAddress': '127.0.0.1',
+                'ViolationContentCollection': [
                     {
-                        "Name": (matchResult.ImageData) ? matchResult.ImageData.filename : "noFileName",
-                        "Value": (matchResult.ImageData) ? matchResult.ImageData.data.toString('base64') : "noImageData"
+                        'Name': (matchResult.ImageData) ? matchResult.ImageData.filename : 'noFileName',
+                        'Value': (matchResult.ImageData) ? matchResult.ImageData.data.toString('base64') : 'noImageData'
                     }
                 ],
-                "AdditionalMetadata": [
+                'AdditionalMetadata': [
                     {
-                        "Key": "IsTest", "Value": "true"
+                        'Key': 'IsTest', 'Value': 'true'
                     }
                 ]
             });
             if (!enableTestMode) {
-                delete content["AdditionalMetadata"];
+                delete content['AdditionalMetadata'];
             }
-            let result = await http.post(this.Report_Post_Url, {
+            const result = await http.post(this.Report_Post_Url, {
                 content,
                 headers: {
                     'Ocp-Apim-Subscription-Key': apiKey,
@@ -166,7 +166,7 @@ export class PhotoDNACloudService {
         }
     }
 
-    isSupportedImageMimeType(mimeType: string): Boolean {
+    public isSupportedImageMimeType(mimeType: string): boolean {
         switch (mimeType) {
             case ('image/gif'):
             case ('image/jpeg'):

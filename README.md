@@ -41,7 +41,7 @@ Method 2: deploy directly to server
         "**/README.md",
         "**/package-lock.json",
         "**/package.json",
-        "**/tslint.json",
+        "**/eslint.config.js",
         "**/tsconfig.json",
         "**/*.js",
         "**/*.js.map",
@@ -122,6 +122,8 @@ Changelog
   * Fix `Invalid or missing request parameter(s)` bug
 * 0.3.3
   * Implemented setting to watch all direct rooms (DMs)
+* 0.3.4
+  * Migrated linting from tslint to eslint
 
 Todos / Caveat
 ==============
