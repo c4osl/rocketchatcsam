@@ -14,10 +14,10 @@ import { IMessage, IPreMessageSentModify } from '@rocket.chat/apps-engine/defini
 import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
 import { SettingType, ISetting } from '@rocket.chat/apps-engine/definition/settings';
 
-import { PhotoDNACloudService } from './helper/PhotoDNACloudService';
-import { IMatchResult } from './helper/IMatchResult';
+import { PhotoDNACloudService } from './lib/PhotoDNACloudService';
+import { IMatchResult } from './lib/IMatchResult';
 import { IRoom } from '@rocket.chat/apps-engine/definition/rooms/IRoom';
-import { SETTING_PHOTODNA_API_KEY, SETTING_QUARANTINE_CHANNEL, SETTING_LIMIT_ANALYSIS_TO_CHANNELS, SETTING_WATCH_DMS, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_ENABLE_AUTOMATED_REPORT, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from './Settings';
+import { SETTING_PHOTODNA_API_KEY, SETTING_QUARANTINE_CHANNEL, SETTING_LIMIT_ANALYSIS_TO_CHANNELS, SETTING_WATCH_DMS, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_ENABLE_AUTOMATED_REPORT, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from './config/Settings';
 
 export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModify {
 

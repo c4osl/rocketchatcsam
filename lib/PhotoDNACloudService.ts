@@ -2,7 +2,7 @@ import { IHttp, ILogger, IRead } from '@rocket.chat/apps-engine/definition/acces
 import { IImageData } from './IImageData';
 import { IMatchResult } from './IMatchResult';
 import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
-import { SETTING_PHOTODNA_API_KEY, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from '../Settings';
+import { SETTING_PHOTODNA_API_KEY, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from '../config/Settings';
 
 /**
  * Microsoft PhotoDNA cloud service
