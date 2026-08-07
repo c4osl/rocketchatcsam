@@ -80,6 +80,11 @@ If the target channel does not exist, the image will be removed from the message
 
 In `Limit image analysis to specified channels` you may provide a comma-separated list of channels to limit the analysis to. In the depicted setting, only images uploaded in the channel `testchannel` will be subject to investigation by this app.
 
+Testing
+=======
+
+The `tests/fixtures/SampleImages` directory contains a set of test images provided by Microsoft for exercising calls to the PhotoDNA cloud service.
+
 Troubleshooting
 ===============
 
