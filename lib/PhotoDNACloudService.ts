@@ -70,6 +70,22 @@ export class PhotoDNACloudService {
     }
 
     /**
+     * Performs a match operation against a small sample image, to verify the configured
+     * API key and network connectivity without needing a real message attachment.
+     * @param http
+     * @param read
+     * @param logger
+     * @param testImageBuffer
+     */
+    public async checkConnection(http: IHttp, read: IRead, logger: ILogger, testImageBuffer: Buffer): Promise<IMatchResult | undefined> {
+        return this.performMatchOperation(http, read, {
+            contentType: 'image/jpeg',
+            filename: 'photodna-connection-test.jpg',
+            data: testImageBuffer,
+        }, logger);
+    }
+
+    /**
      * Perform the match operation as defined by the PhotoDNA cloud service api
      * @param http
      * @param read

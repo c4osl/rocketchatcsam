@@ -114,6 +114,57 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
     assert.equal(result?.ImageData?.filename, 'img_130.jpg');
 });
 
+test('checkConnection parses a successful response from the API', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const http = {
+        post: async () => ({
+            data: {
+                Status: { Code: 3000, Description: 'OK' },
+                TrackingId: 'test-tracking-id',
+                IsMatch: true,
+                MatchDetails: { MatchFlags: [{ Source: 'Test', Violations: ['A1'], MatchDistance: 0 }] },
+            },
+        }),
+    } as unknown as IHttp;
+
+    const read = {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const result = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(result?.Status?.Code, 3000);
+    assert.equal(result?.IsMatch, true);
+});
+
+test('checkConnection surfaces an API error response (e.g. an invalid key)', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const http = {
+        post: async () => ({
+            data: { statusCode: 401, message: 'Access denied due to invalid subscription key.' },
+        }),
+    } as unknown as IHttp;
+
+    const read = {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'invalid-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const result = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(result?.Status, undefined);
+    assert.equal((result as unknown as { statusCode: number }).statusCode, 401);
+});
+
 function makeReportRead(enableTestMode: boolean): IRead {
     const settingValues: Record<string, unknown> = {
         'photodna-api-key': 'fake-api-key',

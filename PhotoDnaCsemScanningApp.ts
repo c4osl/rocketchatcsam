@@ -19,6 +19,7 @@ import { SETTING_QUARANTINE_CHANNEL, SETTING_LIMIT_ANALYSIS_TO_CHANNELS, SETTING
 import { PhotoDNACloudService } from './lib/PhotoDNACloudService';
 import { handleMatchingMessage } from './lib/handleMatchingMessage';
 import { resolveWatchedRoomIds } from './lib/resolveWatchedRoomIds';
+import { PhotoDnaTestConnectionCommand } from './commands/PhotoDnaTestConnectionCommand';
 
 export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModify {
 
@@ -38,6 +39,7 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         for (const setting of settingDefinitions) {
             await configuration.settings.provideSetting(setting);
         }
+        await configuration.slashCommands.provideSlashCommand(new PhotoDnaTestConnectionCommand());
     }
 
     public async onEnable(environment: IEnvironmentRead, _configurationModify: IConfigurationModify): Promise<boolean> {

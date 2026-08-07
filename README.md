@@ -80,6 +80,11 @@ If the target channel does not exist, the image will be removed from the message
 
 In `Limit image analysis to specified channels` you may provide a comma-separated list of channels to limit the analysis to. In the depicted setting, only images uploaded in the channel `testchannel` will be subject to investigation by this app.
 
+Verifying your API key
+=======================
+
+Once you've entered your API Subscription Key, an administrator can run `/photodna-test-connection` in any channel to verify the key and network connectivity, without needing to upload an image first. The app sends a small bundled sample image to PhotoDNA and replies (visible only to you) with either a success confirmation or the actual error PhotoDNA returned (e.g. an invalid key), so there's no guessing whether the key or the connection is the problem. Non-administrators who run the command are told they don't have permission.
+
 Testing
 =======
 
