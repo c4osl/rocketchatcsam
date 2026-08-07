@@ -15,6 +15,10 @@ out/
 # Rocket.Chat development
 .rcappsconfig
 
+# environment variables (e.g. PHOTODNA_API_KEY for the integration test)
+.env
+.env.*
+
 # macOS
 .DS_Store
 .AppleDouble
