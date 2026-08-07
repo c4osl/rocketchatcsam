@@ -132,7 +132,7 @@ export class PhotoDNACloudService {
         const ncmecReporterEmail = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_REPORTER_EMAIL);
         const enableTestMode = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_ENABLE_TEST_MODE);
         if (apiKey && ncmecUser && ncmecPassword) {
-            const content = JSON.stringify({
+            const reportBody: Record<string, unknown> = {
                 'OrgName': ncmecOrgName,
                 'ReporterName': ncmecReporterName,
                 'ReporterEmail': ncmecReporterEmail,
@@ -150,10 +150,11 @@ export class PhotoDNACloudService {
                         'Key': 'IsTest', 'Value': 'true'
                     }
                 ]
-            });
+            };
             if (!enableTestMode) {
-                delete content['AdditionalMetadata'];
+                delete reportBody['AdditionalMetadata'];
             }
+            const content = JSON.stringify(reportBody);
             const result = await http.post(this.Report_Post_Url, {
                 content,
                 headers: {

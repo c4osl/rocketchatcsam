@@ -113,3 +113,62 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
     assert.equal(result?.TrackingId, 'test-tracking-id');
     assert.equal(result?.ImageData?.filename, 'img_130.jpg');
 });
+
+function makeReportRead(enableTestMode: boolean): IRead {
+    const settingValues: Record<string, unknown> = {
+        'photodna-api-key': 'fake-api-key',
+        'ncmec-user': 'fake-user',
+        'ncmec-password': 'fake-password',
+        'ncmec-orgname': 'TestOrg',
+        'ncmec-reporter-name': 'Reporter',
+        'ncmec-reporter-email': 'test@example.org',
+        'ncmec-enable-test-mode': enableTestMode,
+    };
+    return {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (id: string) => settingValues[id],
+            }),
+        }),
+    } as unknown as IRead;
+}
+
+test('performReportOperation includes the IsTest flag when test mode is enabled', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage(undefined);
+
+    let requestedContent: string | undefined;
+    const http = {
+        post: async (_url: string, options: { content?: string }) => {
+            requestedContent = options.content;
+            return { data: { ok: true } };
+        },
+    } as unknown as IHttp;
+
+    const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
+    await service.performReportOperation(matchResult, http, message, makeReportRead(true));
+
+    assert.ok(requestedContent);
+    const sentBody = JSON.parse(requestedContent as string);
+    assert.ok('AdditionalMetadata' in sentBody);
+});
+
+test('performReportOperation omits the IsTest flag when test mode is disabled', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage(undefined);
+
+    let requestedContent: string | undefined;
+    const http = {
+        post: async (_url: string, options: { content?: string }) => {
+            requestedContent = options.content;
+            return { data: { ok: true } };
+        },
+    } as unknown as IHttp;
+
+    const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
+    await service.performReportOperation(matchResult, http, message, makeReportRead(false));
+
+    assert.ok(requestedContent);
+    const sentBody = JSON.parse(requestedContent as string);
+    assert.ok(!('AdditionalMetadata' in sentBody));
+});
