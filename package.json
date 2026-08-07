@@ -1,11 +1,17 @@
 {
     "devDependencies": {
-        "@rocket.chat/apps-engine": "^1.19.0",
+        "@rocket.chat/apps-engine": "^1.64.1",
+        "@rocket.chat/ui-kit": "~1.1.0",
         "@types/node": "^22.10.0",
         "tslint": "^5.10.0",
         "typescript": "^5.6.0"
     },
     "dependencies": {
         "chokidar": "^3.4.3"
+    },
+    "overrides": {
+        "@rocket.chat/ui-kit": {
+            "typia": "9.7.2"
+        }
     }
 }
