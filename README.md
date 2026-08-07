@@ -83,7 +83,17 @@ In `Limit image analysis to specified channels` you may provide a comma-separate
 Testing
 =======
 
+Automated unit tests live under `tests/`, mirroring the shape of the app's own code (`tests/config/`, `tests/lib/`), and run via `npm test`. These use mocked `IHttp`/`IRead` accessors, so they verify the app's own logic without making any network calls.
+
 The `tests/fixtures/SampleImages` directory contains a set of test images provided by Microsoft for exercising calls to the PhotoDNA cloud service.
+
+`tests/integration/photoDnaLiveConnection.test.ts` makes a real call to the live PhotoDNA API using one of these sample images, to verify your API key and network connectivity actually work, without needing a running Rocket.Chat server. It's excluded from `npm test` since it requires a real key and network access. To run it:
+
+```
+PHOTODNA_API_KEY="your-real-key-here" npm run integration-test
+```
+
+Without `PHOTODNA_API_KEY` set, the test skips cleanly instead of failing. With an invalid key, it fails with the API's actual error response (e.g. a 401), so there's no guessing whether the key or the app's request logic is at fault.
 
 Troubleshooting
 ===============
