@@ -23,6 +23,14 @@ import { handleMatchingMessage } from './lib/handleMatchingMessage';
 import { resolveWatchedRoomIds } from './lib/resolveWatchedRoomIds';
 import { PhotoDnaTestConnectionCommand } from './commands/PhotoDnaTestConnectionCommand';
 
+// https://developer.rocket.chat/reference/api/schema-definition/room
+const ROOM_TYPES = Object.freeze({
+    dm: 'd',
+    chatroom: 'c',
+    private: 'p',
+    livechat: 'l',
+});
+
 export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModify {
 
     private photoDnaService: PhotoDNACloudService;
@@ -66,18 +74,11 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
     }
 
     public async checkPreMessageSentModify(message: IMessage, _read: IRead, _http: IHttp): Promise<boolean> {
-        // https://developer.rocket.chat/reference/api/schema-definition/room
-        const roomTypes = {
-            dm: 'd',
-            chatroom: 'c',
-            private: 'p',
-            livechat: 'l',
-        };
         if (
             this.watchedRoomsId === undefined
             || this.watchedRoomsId.size === 0
             || this.watchedRoomsId.has(message.room.id)
-            || (this.watchDMs && message.room.type === roomTypes.dm)
+            || (this.watchDMs && message.room.type === ROOM_TYPES.dm)
         ) {
             return this.photoDnaService.preMatchMessage(message, this.getLogger());
         } else {

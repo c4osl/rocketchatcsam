@@ -25,20 +25,7 @@ export class PhotoDNACloudService {
             return false;
         }
 
-        let hasScannableImage = false;
-        for (const attachment of message.attachments as Array<any>) {
-            // is it an image ?
-            if (!attachment.imageUrl) {
-                continue;
-            }
-            // does the PhotoDNA service support this attachment ?
-            if (!this.isSupportedImageMimeType(attachment.imageType)) {
-                logger.warn('Could not perform match operation on unsupported image type ' + attachment.imageType);
-                continue;
-            }
-            hasScannableImage = true;
-        }
-
+        const hasScannableImage = (message.attachments as Array<any>).some((attachment) => this.isScannableImageAttachment(attachment));
         if (!hasScannableImage) {
             return false;
         }
@@ -56,9 +43,7 @@ export class PhotoDNACloudService {
      * @param http
      */
     public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<Array<MatchOutcome>> {
-        const imageAttachments = (message.attachments as Array<any> ?? []).filter(
-            (attachment) => attachment.imageUrl && this.isSupportedImageMimeType(attachment.imageType),
-        );
+        const imageAttachments = (message.attachments as Array<any> ?? []).filter((attachment) => this.isScannableImageAttachment(attachment));
 
         const outcomes: Array<MatchOutcome> = [];
         for (const imageAttachment of imageAttachments) {
@@ -216,5 +201,14 @@ export class PhotoDNACloudService {
                 return true;
         }
         return false;
+    }
+
+    /**
+     * The single source of truth for whether an attachment is one PhotoDNA can scan,
+     * shared by preMatchMessage and matchMessage so their filtering can't drift apart.
+     * @param attachment
+     */
+    private isScannableImageAttachment(attachment: any): boolean {
+        return Boolean(attachment.imageUrl) && this.isSupportedImageMimeType(attachment.imageType);
     }
 }
