@@ -49,10 +49,7 @@ export class PhotoDNACloudService {
         for (const imageAttachment of imageAttachments) {
             const imageMimeType = imageAttachment.imageType;
             const imageFileName = imageAttachment.title.value;
-            // determine image id and load it
-            const imageId = imageAttachment.imageUrl.substring(0, imageAttachment.imageUrl.lastIndexOf('/')).replace('/file-upload/', '')
-            // TODO better way to find image id?
-            const imageBuffer = await read.getUploadReader().getBufferById(imageId)
+            const imageBuffer = await read.getUploadReader().getBufferById(imageAttachment.fileId)
             if (!imageBuffer) {
                 outcomes.push({ verified: false, reason: `Could not load the image buffer for attachment "${imageFileName}".` });
                 continue;
@@ -235,9 +232,12 @@ export class PhotoDNACloudService {
     /**
      * The single source of truth for whether an attachment is one PhotoDNA can scan,
      * shared by preMatchMessage and matchMessage so their filtering can't drift apart.
+     * Requires fileId (not just imageUrl) since that's what identifies the actual uploaded
+     * file to load; an attachment could have an imageUrl without being a local upload at all
+     * (e.g. a hotlinked external image), which we have no buffer to scan either way.
      * @param attachment
      */
     private isScannableImageAttachment(attachment: any): boolean {
-        return Boolean(attachment.imageUrl) && this.isSupportedImageMimeType(attachment.imageType);
+        return Boolean(attachment.imageUrl) && Boolean(attachment.fileId) && this.isSupportedImageMimeType(attachment.imageType);
     }
 }

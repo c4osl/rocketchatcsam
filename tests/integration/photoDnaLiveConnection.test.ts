@@ -78,6 +78,7 @@ function makeMessage(imageFileName: string): IMessage {
             imageUrl: `https://example.org/file-upload/integration-test/${imageFileName}`,
             imageType: 'image/jpeg',
             title: { value: imageFileName },
+            fileId: 'integration-test-file-id',
         }],
     } as unknown as IMessage;
 }

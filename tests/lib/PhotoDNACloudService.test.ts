@@ -55,9 +55,16 @@ test('preMatchMessage returns false for an unsupported image type', async () => 
     assert.equal(result, false);
 });
 
+test('preMatchMessage returns false when the attachment has no fileId (e.g. a hotlinked external image)', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage({ imageUrl: 'https://example.org/img.jpg', imageType: 'image/jpeg', fileId: undefined });
+    const result = await service.preMatchMessage(message, makeLogger());
+    assert.equal(result, false);
+});
+
 test('preMatchMessage returns true for a supported image type', async () => {
     const service = new PhotoDNACloudService();
-    const message = makeMessage({ imageUrl: 'https://example.org/file-upload/abc/img.jpg', imageType: 'image/jpeg' });
+    const message = makeMessage({ imageUrl: 'https://example.org/file-upload/abc/img.jpg', imageType: 'image/jpeg', fileId: 'file-id-abc' });
     const result = await service.preMatchMessage(message, makeLogger());
     assert.equal(result, true);
 });
@@ -65,8 +72,8 @@ test('preMatchMessage returns true for a supported image type', async () => {
 test('preMatchMessage returns true when a later attachment is a supported image, even if an earlier one is not', async () => {
     const service = new PhotoDNACloudService();
     const message = makeMessage([
-        { imageUrl: 'https://example.org/file-upload/abc/doc.webp', imageType: 'image/webp' },
-        { imageUrl: 'https://example.org/file-upload/abc/img.jpg', imageType: 'image/jpeg' },
+        { imageUrl: 'https://example.org/file-upload/abc/doc.webp', imageType: 'image/webp', fileId: 'file-id-doc' },
+        { imageUrl: 'https://example.org/file-upload/abc/img.jpg', imageType: 'image/jpeg', fileId: 'file-id-img' },
     ]);
     const result = await service.preMatchMessage(message, makeLogger());
     assert.equal(result, true);
@@ -80,6 +87,7 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
         imageUrl: 'https://example.org/file-upload/upload-id-123/img_130.jpg',
         imageType: 'image/jpeg',
         title: { value: 'img_130.jpg' },
+        fileId: 'file-id-123',
     });
 
     let requestedUrl: string | undefined;
@@ -101,9 +109,10 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
         },
     } as unknown as IHttp;
 
+    let requestedFileId: string | undefined;
     const read = {
         getUploadReader: () => ({
-            getBufferById: async (_id: string) => imageBuffer,
+            getBufferById: async (fileId: string) => { requestedFileId = fileId; return imageBuffer; },
         }),
         getEnvironmentReader: () => ({
             getSettings: () => ({
@@ -114,6 +123,9 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
 
     const outcomes = await service.matchMessage(message, makeLogger(), read, http);
 
+    // pins the attachment's fileId as the contract for loading the upload, not a
+    // URL parsed apart, so a future Rocket.Chat upload-URL scheme change can't break this silently
+    assert.equal(requestedFileId, 'file-id-123');
     assert.ok(requestedUrl?.endsWith('/Match'));
     assert.ok(requestedContent);
     const sentBody = JSON.parse(requestedContent as string);
@@ -133,8 +145,8 @@ test('matchMessage scans every image attachment, not just the first', async () =
     const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
 
     const message = makeMessage([
-        { imageUrl: 'https://example.org/file-upload/upload-id-1/clean.jpg', imageType: 'image/jpeg', title: { value: 'clean.jpg' } },
-        { imageUrl: 'https://example.org/file-upload/upload-id-2/img_130.jpg', imageType: 'image/jpeg', title: { value: 'img_130.jpg' } },
+        { imageUrl: 'https://example.org/file-upload/upload-id-1/clean.jpg', imageType: 'image/jpeg', title: { value: 'clean.jpg' }, fileId: 'file-id-1' },
+        { imageUrl: 'https://example.org/file-upload/upload-id-2/img_130.jpg', imageType: 'image/jpeg', title: { value: 'img_130.jpg' }, fileId: 'file-id-2' },
     ]);
 
     let callCount = 0;
@@ -182,8 +194,8 @@ test('matchMessage skips non-image and unsupported attachments while still scann
 
     const message = makeMessage([
         { imageUrl: undefined },
-        { imageUrl: 'https://example.org/file-upload/upload-id-1/doc.webp', imageType: 'image/webp' },
-        { imageUrl: 'https://example.org/file-upload/upload-id-2/img_130.jpg', imageType: 'image/jpeg', title: { value: 'img_130.jpg' } },
+        { imageUrl: 'https://example.org/file-upload/upload-id-1/doc.webp', imageType: 'image/webp', fileId: 'file-id-1' },
+        { imageUrl: 'https://example.org/file-upload/upload-id-2/img_130.jpg', imageType: 'image/jpeg', title: { value: 'img_130.jpg' }, fileId: 'file-id-2' },
     ]);
 
     const http = {
@@ -220,6 +232,7 @@ test('matchMessage reports an indeterminate outcome when the image buffer cannot
         imageUrl: 'https://example.org/file-upload/upload-id-123/img_130.jpg',
         imageType: 'image/jpeg',
         title: { value: 'img_130.jpg' },
+        fileId: 'file-id-123',
     });
 
     const http = { post: async () => ({ data: {} }) } as unknown as IHttp;
