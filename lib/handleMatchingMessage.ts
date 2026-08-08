@@ -5,8 +5,9 @@ import { moveToQuarantine } from './moveToQuarantine';
 import { PhotoDNACloudService } from './PhotoDNACloudService';
 
 /**
- * Quarantines a message that matched the PhotoDNA service, and files an NCMEC report if enabled.
- * @param matchResult
+ * Quarantines a message that matched the PhotoDNA service, and files a single NCMEC
+ * report covering every matched attachment, if enabled.
+ * @param matchResults
  * @param message
  * @param read
  * @param persistence
@@ -18,7 +19,7 @@ import { PhotoDNACloudService } from './PhotoDNACloudService';
  * @param photoDnaService
  */
 export async function handleMatchingMessage(
-    matchResult: IMatchResult,
+    matchResults: Array<IMatchResult>,
     message: IMessage,
     read: IRead,
     persistence: IPersistence,
@@ -29,20 +30,22 @@ export async function handleMatchingMessage(
     enableAutomatedReport: boolean,
     photoDnaService: PhotoDNACloudService,
 ): Promise<void> {
-    const matchResultForLog: Record<string, unknown> = { ...matchResult };
-    delete matchResultForLog['ImageData'];
-    logger.warn(
-        'CSEM-MATCH',
-        `enable automated report: ${enableAutomatedReport}`,
-        `message ID: ${message.id}`,
-        message.sender,
-        JSON.stringify(matchResultForLog),
-    );
+    for (const matchResult of matchResults) {
+        const matchResultForLog: Record<string, unknown> = { ...matchResult };
+        delete matchResultForLog['ImageData'];
+        logger.warn(
+            'CSEM-MATCH',
+            `enable automated report: ${enableAutomatedReport}`,
+            `message ID: ${message.id}`,
+            message.sender,
+            JSON.stringify(matchResultForLog),
+        );
+    }
 
     await moveToQuarantine(read, builder, logger, quarantineChannel);
 
     if (enableAutomatedReport) {
-        const result = await photoDnaService.performReportOperation(matchResult, http, message, read);
+        const result = await photoDnaService.performReportOperation(matchResults, http, message, read);
         logger.warn('Violation-Report-Result', result);
     }
 }

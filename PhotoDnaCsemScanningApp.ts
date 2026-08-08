@@ -14,6 +14,7 @@ import { IMessage, IPreMessageSentModify } from '@rocket.chat/apps-engine/defini
 import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
 import { ISetting } from '@rocket.chat/apps-engine/definition/settings';
 
+import { IMatchResult } from './lib/IMatchResult';
 import { settingDefinitions } from './config/settingDefinitions';
 import { SETTING_QUARANTINE_CHANNEL, SETTING_LIMIT_ANALYSIS_TO_CHANNELS, SETTING_WATCH_DMS, SETTING_ENABLE_AUTOMATED_REPORT } from './config/Settings';
 import { PhotoDNACloudService } from './lib/PhotoDNACloudService';
@@ -92,24 +93,35 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         persistence: IPersistence,
     ): Promise<IMessage> {
         const logger = this.getLogger();
-        const outcome = await this.photoDnaService.matchMessage(message, logger, read, http);
-        if (outcome.verified) {
-            if (outcome.result.IsMatch) {
-                await handleMatchingMessage(
-                    outcome.result,
-                    message,
-                    read,
-                    persistence,
-                    builder,
-                    http,
-                    logger,
-                    this.quarantineChannel,
-                    this.enableAutomatedReport,
-                    this.photoDnaService,
-                );
+        const outcomes = await this.photoDnaService.matchMessage(message, logger, read, http);
+
+        const matchedResults: Array<IMatchResult> = [];
+        const unverifiedReasons: Array<string> = [];
+        for (const outcome of outcomes) {
+            if (outcome.verified) {
+                if (outcome.result.IsMatch) {
+                    matchedResults.push(outcome.result);
+                }
+            } else {
+                unverifiedReasons.push(outcome.reason);
             }
-        } else {
-            await handleIndeterminateResult(outcome.reason, message, read, builder, logger, this.quarantineChannel);
+        }
+
+        if (matchedResults.length > 0) {
+            await handleMatchingMessage(
+                matchedResults,
+                message,
+                read,
+                persistence,
+                builder,
+                http,
+                logger,
+                this.quarantineChannel,
+                this.enableAutomatedReport,
+                this.photoDnaService,
+            );
+        } else if (unverifiedReasons.length > 0) {
+            await handleIndeterminateResult(unverifiedReasons.join(' | '), message, read, builder, logger, this.quarantineChannel);
         }
         return builder.getMessage();
     }

@@ -13,13 +13,14 @@ function makeLogger(): ILogger {
     } as unknown as ILogger;
 }
 
-function makeMessage(attachment: Record<string, unknown> | undefined): IMessage {
+function makeMessage(attachments: Array<Record<string, unknown>> | Record<string, unknown> | undefined): IMessage {
+    const list = attachments === undefined ? undefined : Array.isArray(attachments) ? attachments : [attachments];
     return {
         id: 'message-id',
         room: { id: 'room-id' },
         sender: { name: 'Test User', username: 'testuser' },
         createdAt: new Date('2024-01-01T00:00:00.000Z'),
-        attachments: attachment ? [attachment] : undefined,
+        attachments: list,
     } as unknown as IMessage;
 }
 
@@ -57,6 +58,16 @@ test('preMatchMessage returns false for an unsupported image type', async () => 
 test('preMatchMessage returns true for a supported image type', async () => {
     const service = new PhotoDNACloudService();
     const message = makeMessage({ imageUrl: 'https://example.org/file-upload/abc/img.jpg', imageType: 'image/jpeg' });
+    const result = await service.preMatchMessage(message, makeLogger());
+    assert.equal(result, true);
+});
+
+test('preMatchMessage returns true when a later attachment is a supported image, even if an earlier one is not', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage([
+        { imageUrl: 'https://example.org/file-upload/abc/doc.webp', imageType: 'image/webp' },
+        { imageUrl: 'https://example.org/file-upload/abc/img.jpg', imageType: 'image/jpeg' },
+    ]);
     const result = await service.preMatchMessage(message, makeLogger());
     assert.equal(result, true);
 });
@@ -101,7 +112,7 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
         }),
     } as unknown as IRead;
 
-    const outcome = await service.matchMessage(message, makeLogger(), read, http);
+    const outcomes = await service.matchMessage(message, makeLogger(), read, http);
 
     assert.ok(requestedUrl?.endsWith('/Match'));
     assert.ok(requestedContent);
@@ -109,11 +120,98 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
     assert.equal(sentBody.DataRepresentation, 'inline');
     assert.equal(sentBody.Value, imageBuffer.toString('base64'));
 
-    assert.equal(outcome.verified, true);
-    assert.ok(outcome.verified);
-    assert.equal(outcome.result.IsMatch, true);
-    assert.equal(outcome.result.TrackingId, 'test-tracking-id');
-    assert.equal(outcome.result.ImageData?.filename, 'img_130.jpg');
+    assert.equal(outcomes.length, 1);
+    assert.equal(outcomes[0].verified, true);
+    assert.ok(outcomes[0].verified);
+    assert.equal(outcomes[0].result.IsMatch, true);
+    assert.equal(outcomes[0].result.TrackingId, 'test-tracking-id');
+    assert.equal(outcomes[0].result.ImageData?.filename, 'img_130.jpg');
+});
+
+test('matchMessage scans every image attachment, not just the first', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const message = makeMessage([
+        { imageUrl: 'https://example.org/file-upload/upload-id-1/clean.jpg', imageType: 'image/jpeg', title: { value: 'clean.jpg' } },
+        { imageUrl: 'https://example.org/file-upload/upload-id-2/img_130.jpg', imageType: 'image/jpeg', title: { value: 'img_130.jpg' } },
+    ]);
+
+    let callCount = 0;
+    const http = {
+        post: async () => {
+            callCount += 1;
+            const isMatch = callCount === 2;
+            return {
+                data: {
+                    Status: { Code: 3000, Description: 'OK' },
+                    TrackingId: `tracking-${callCount}`,
+                    IsMatch: isMatch,
+                    MatchDetails: isMatch ? { MatchFlags: [{ Source: 'Test', Violations: ['A1'], MatchDistance: 0 }] } : undefined,
+                },
+            };
+        },
+    } as unknown as IHttp;
+
+    const read = {
+        getUploadReader: () => ({
+            getBufferById: async (_id: string) => imageBuffer,
+        }),
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcomes = await service.matchMessage(message, makeLogger(), read, http);
+
+    assert.equal(callCount, 2, 'both attachments should have been sent to PhotoDNA, not just the first');
+    assert.equal(outcomes.length, 2);
+    assert.equal(outcomes[0].verified, true);
+    assert.ok(outcomes[0].verified);
+    assert.equal(outcomes[0].result.IsMatch, false);
+    assert.equal(outcomes[1].verified, true);
+    assert.ok(outcomes[1].verified);
+    assert.equal(outcomes[1].result.IsMatch, true);
+});
+
+test('matchMessage skips non-image and unsupported attachments while still scanning the rest', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const message = makeMessage([
+        { imageUrl: undefined },
+        { imageUrl: 'https://example.org/file-upload/upload-id-1/doc.webp', imageType: 'image/webp' },
+        { imageUrl: 'https://example.org/file-upload/upload-id-2/img_130.jpg', imageType: 'image/jpeg', title: { value: 'img_130.jpg' } },
+    ]);
+
+    const http = {
+        post: async () => ({
+            data: {
+                Status: { Code: 3000, Description: 'OK' },
+                TrackingId: 'test-tracking-id',
+                IsMatch: true,
+                MatchDetails: { MatchFlags: [{ Source: 'Test', Violations: ['A1'], MatchDistance: 0 }] },
+            },
+        }),
+    } as unknown as IHttp;
+
+    const read = {
+        getUploadReader: () => ({
+            getBufferById: async (_id: string) => imageBuffer,
+        }),
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcomes = await service.matchMessage(message, makeLogger(), read, http);
+
+    assert.equal(outcomes.length, 1);
+    assert.equal(outcomes[0].verified, true);
 });
 
 test('matchMessage reports an indeterminate outcome when the image buffer cannot be loaded', async () => {
@@ -136,11 +234,12 @@ test('matchMessage reports an indeterminate outcome when the image buffer cannot
         }),
     } as unknown as IRead;
 
-    const outcome = await service.matchMessage(message, makeLogger(), read, http);
+    const outcomes = await service.matchMessage(message, makeLogger(), read, http);
 
-    assert.equal(outcome.verified, false);
-    assert.ok(!outcome.verified);
-    assert.match(outcome.reason, /image buffer/i);
+    assert.equal(outcomes.length, 1);
+    assert.equal(outcomes[0].verified, false);
+    assert.ok(!outcomes[0].verified);
+    assert.match(outcomes[0].reason, /image buffer/i);
 });
 
 test('checkConnection parses a successful response from the API', async () => {
@@ -307,7 +406,7 @@ test('performReportOperation includes the IsTest flag when test mode is enabled'
     } as unknown as IHttp;
 
     const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
-    await service.performReportOperation(matchResult, http, message, makeReportRead(true));
+    await service.performReportOperation([matchResult], http, message, makeReportRead(true));
 
     assert.ok(requestedContent);
     const sentBody = JSON.parse(requestedContent as string);
@@ -327,9 +426,42 @@ test('performReportOperation omits the IsTest flag when test mode is disabled', 
     } as unknown as IHttp;
 
     const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
-    await service.performReportOperation(matchResult, http, message, makeReportRead(false));
+    await service.performReportOperation([matchResult], http, message, makeReportRead(false));
 
     assert.ok(requestedContent);
     const sentBody = JSON.parse(requestedContent as string);
     assert.ok(!('AdditionalMetadata' in sentBody));
+});
+
+test('performReportOperation includes every matched image in a single ViolationContentCollection', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage(undefined);
+
+    let requestedContent: string | undefined;
+    const http = {
+        post: async (_url: string, options: { content?: string }) => {
+            requestedContent = options.content;
+            return { data: { ok: true } };
+        },
+    } as unknown as IHttp;
+
+    const matchResults = [
+        {
+            Status: { Code: 3000, Description: 'OK' },
+            TrackingId: 'x',
+            ImageData: { contentType: 'image/jpeg', filename: 'first.jpg', data: Buffer.from('first') },
+        },
+        {
+            Status: { Code: 3000, Description: 'OK' },
+            TrackingId: 'y',
+            ImageData: { contentType: 'image/jpeg', filename: 'second.jpg', data: Buffer.from('second') },
+        },
+    ];
+    await service.performReportOperation(matchResults, http, message, makeReportRead(false));
+
+    assert.ok(requestedContent);
+    const sentBody = JSON.parse(requestedContent as string);
+    assert.equal(sentBody.ViolationContentCollection.length, 2);
+    assert.equal(sentBody.ViolationContentCollection[0].Name, 'first.jpg');
+    assert.equal(sentBody.ViolationContentCollection[1].Name, 'second.jpg');
 });

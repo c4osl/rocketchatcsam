@@ -90,7 +90,10 @@ test(
         const imageBuffer = fs.readFileSync(imagePath);
         const message = makeMessage(path.basename(imagePath));
 
-        const outcome = await service.matchMessage(message, makeLogger(), makeRead(imageBuffer), makeLiveHttp());
+        const outcomes = await service.matchMessage(message, makeLogger(), makeRead(imageBuffer), makeLiveHttp());
+
+        assert.equal(outcomes.length, 1);
+        const outcome = outcomes[0];
 
         // An unverified outcome (e.g. a 401 for an invalid key) means the connection or
         // credential is broken, not the app's own logic.

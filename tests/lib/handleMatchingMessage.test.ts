@@ -36,22 +36,25 @@ function makeMessage(): IMessage {
     } as unknown as IMessage;
 }
 
-test('does not serialize matched image bytes into the log line', async () => {
-    const { logger, warnCalls } = makeLogger();
-    const imageMarker = 'unmistakable-image-bytes-marker';
-    const matchResult = {
+function makeMatchResult(filename: string, imageMarker: string): IMatchResult {
+    return {
         Status: { Code: 3000, Description: 'OK' },
         TrackingId: 'test-tracking-id',
         IsMatch: true,
         ImageData: {
             contentType: 'image/jpeg',
-            filename: 'img.jpg',
+            filename,
             data: Buffer.from(imageMarker),
         },
     } as unknown as IMatchResult;
+}
+
+test('does not serialize matched image bytes into the log line', async () => {
+    const { logger, warnCalls } = makeLogger();
+    const imageMarker = 'unmistakable-image-bytes-marker';
 
     await handleMatchingMessage(
-        matchResult,
+        [makeMatchResult('img.jpg', imageMarker)],
         makeMessage(),
         makeRead(),
         {} as IPersistence,
@@ -66,4 +69,52 @@ test('does not serialize matched image bytes into the log line', async () => {
     const serializedCalls = JSON.stringify(warnCalls);
     assert.ok(!serializedCalls.includes(imageMarker));
     assert.ok(!serializedCalls.includes(Buffer.from(imageMarker).toString('base64')));
+});
+
+test('logs every matched attachment when a message has more than one', async () => {
+    const { logger, warnCalls } = makeLogger();
+
+    await handleMatchingMessage(
+        [makeMatchResult('first.jpg', 'first-marker'), makeMatchResult('second.jpg', 'second-marker')],
+        makeMessage(),
+        makeRead(),
+        {} as IPersistence,
+        makeBuilder(),
+        {} as IHttp,
+        logger,
+        '',
+        false,
+        new PhotoDNACloudService(),
+    );
+
+    const matchLogs = warnCalls.filter((call) => call[0] === 'CSEM-MATCH');
+    assert.equal(matchLogs.length, 2);
+});
+
+test('files a single report covering every matched attachment when automated reporting is enabled', async () => {
+    const { logger } = makeLogger();
+    const service = new PhotoDNACloudService();
+    let reportCallCount = 0;
+    let reportedMatchResults: Array<IMatchResult> | undefined;
+    service.performReportOperation = async (matchResults: Array<IMatchResult>) => {
+        reportCallCount += 1;
+        reportedMatchResults = matchResults;
+        return { ok: true };
+    };
+
+    await handleMatchingMessage(
+        [makeMatchResult('first.jpg', 'first-marker'), makeMatchResult('second.jpg', 'second-marker')],
+        makeMessage(),
+        makeRead(),
+        {} as IPersistence,
+        makeBuilder(),
+        {} as IHttp,
+        logger,
+        '',
+        true,
+        service,
+    );
+
+    assert.equal(reportCallCount, 1, 'expected a single combined report, not one per matched attachment');
+    assert.equal(reportedMatchResults?.length, 2);
 });

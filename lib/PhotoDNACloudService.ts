@@ -16,25 +16,30 @@ export class PhotoDNACloudService {
 
     /**
      * Determine whether matchMessage is to be executed, which is the case if this message
-     * contains an image we can handle
+     * contains at least one image we can handle
      * @param message
      * @param logger
      */
     public async preMatchMessage(message: IMessage, logger: ILogger): Promise<boolean> {
-        // is there an attachment ?
         if (!message.attachments) {
             return false;
         }
-        // is it an image ?
-        if (!message.attachments[0].imageUrl) {
-            return false;
+
+        let hasScannableImage = false;
+        for (const attachment of message.attachments as Array<any>) {
+            // is it an image ?
+            if (!attachment.imageUrl) {
+                continue;
+            }
+            // does the PhotoDNA service support this attachment ?
+            if (!this.isSupportedImageMimeType(attachment.imageType)) {
+                logger.warn('Could not perform match operation on unsupported image type ' + attachment.imageType);
+                continue;
+            }
+            hasScannableImage = true;
         }
 
-        const imageAttachment: any = message.attachments[0];
-        const imageMimeType = imageAttachment.imageType;
-        // does the PhotoDNA service support this attachment ?
-        if (!this.isSupportedImageMimeType(imageMimeType)) {
-            logger.warn('Could not perform match operation on unsupported image type ' + imageMimeType);
+        if (!hasScannableImage) {
             return false;
         }
         logger.debug(`Will attempt to match message from ${message.sender.name} in room #   ${message.room.id} at ${message.createdAt}.`);
@@ -42,31 +47,41 @@ export class PhotoDNACloudService {
     }
 
     /**
-     * Matches the message against the PhotoDNA service. Before executing this method, be sure to call preMatchMessage
+     * Matches every scannable image attachment on the message against the PhotoDNA service,
+     * one at a time, returning one outcome per attachment. Before executing this method, be
+     * sure to call preMatchMessage
      * @param message
      * @param logger
      * @param read
      * @param http
      */
-    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<MatchOutcome> {
-        const imageAttachment: any = message.attachments![0];
-        const imageMimeType = imageAttachment.imageType;
-        const imageFileName = imageAttachment.title.value;
-        // determine image id and load it
-        const imageId = imageAttachment.imageUrl.substring(0, imageAttachment.imageUrl.lastIndexOf('/')).replace('/file-upload/', '')
-        // TODO better way to find image id?
-        const imageBuffer = await read.getUploadReader().getBufferById(imageId)
-        if (!imageBuffer) {
-            return { verified: false, reason: 'Could not load the image buffer for this attachment.' };
-        }
+    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<Array<MatchOutcome>> {
+        const imageAttachments = (message.attachments as Array<any> ?? []).filter(
+            (attachment) => attachment.imageUrl && this.isSupportedImageMimeType(attachment.imageType),
+        );
 
-        const outcome = await this.performMatchOperation(http, read, {
-            contentType: imageMimeType,
-            filename: imageFileName,
-            data: imageBuffer
-        }, logger);
-        logger.debug(`Performed match operation on ${imageFileName}. verified: ${outcome.verified}.`);
-        return outcome;
+        const outcomes: Array<MatchOutcome> = [];
+        for (const imageAttachment of imageAttachments) {
+            const imageMimeType = imageAttachment.imageType;
+            const imageFileName = imageAttachment.title.value;
+            // determine image id and load it
+            const imageId = imageAttachment.imageUrl.substring(0, imageAttachment.imageUrl.lastIndexOf('/')).replace('/file-upload/', '')
+            // TODO better way to find image id?
+            const imageBuffer = await read.getUploadReader().getBufferById(imageId)
+            if (!imageBuffer) {
+                outcomes.push({ verified: false, reason: `Could not load the image buffer for attachment "${imageFileName}".` });
+                continue;
+            }
+
+            const outcome = await this.performMatchOperation(http, read, {
+                contentType: imageMimeType,
+                filename: imageFileName,
+                data: imageBuffer
+            }, logger);
+            logger.debug(`Performed match operation on ${imageFileName}. verified: ${outcome.verified}.`);
+            outcomes.push(outcome);
+        }
+        return outcomes;
     }
 
     /**
@@ -142,14 +157,14 @@ export class PhotoDNACloudService {
     }
 
     /**
-     * Report a content violation to NCMEC
-     * @param matchResult
+     * Report one or more content violations from the same message to NCMEC in a single report
+     * @param matchResults
      * @param http
      * @param message
      * @param read
      * @see https://developer.microsoftmoderator.com/docs/services/57c7426e2703740ec4c9f4c3/operations/57c77fdee3a97812ecf8bdeb
      */
-    public async performReportOperation(matchResult: IMatchResult, http: IHttp, message: IMessage, read: IRead): Promise<any> {
+    public async performReportOperation(matchResults: Array<IMatchResult>, http: IHttp, message: IMessage, read: IRead): Promise<any> {
         const apiKey = await read.getEnvironmentReader().getSettings().getValueById(SETTING_PHOTODNA_API_KEY);
         const ncmecUser = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_USER);
         const ncmecPassword = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_PASSWORD);
@@ -165,12 +180,10 @@ export class PhotoDNACloudService {
                 'IncidentTime': (message.createdAt) ? message.createdAt.toISOString() : '',
                 'ReporteeName': message.sender.username,
                 'ReporteeIPAddress': '127.0.0.1',
-                'ViolationContentCollection': [
-                    {
-                        'Name': (matchResult.ImageData) ? matchResult.ImageData.filename : 'noFileName',
-                        'Value': (matchResult.ImageData) ? matchResult.ImageData.data.toString('base64') : 'noImageData'
-                    }
-                ],
+                'ViolationContentCollection': matchResults.map((matchResult) => ({
+                    'Name': (matchResult.ImageData) ? matchResult.ImageData.filename : 'noFileName',
+                    'Value': (matchResult.ImageData) ? matchResult.ImageData.data.toString('base64') : 'noImageData'
+                })),
                 'AdditionalMetadata': [
                     {
                         'Key': 'IsTest', 'Value': 'true'
