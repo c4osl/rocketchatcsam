@@ -17,6 +17,7 @@ import { ISetting } from '@rocket.chat/apps-engine/definition/settings';
 import { settingDefinitions } from './config/settingDefinitions';
 import { SETTING_QUARANTINE_CHANNEL, SETTING_LIMIT_ANALYSIS_TO_CHANNELS, SETTING_WATCH_DMS, SETTING_ENABLE_AUTOMATED_REPORT } from './config/Settings';
 import { PhotoDNACloudService } from './lib/PhotoDNACloudService';
+import { handleIndeterminateResult } from './lib/handleIndeterminateResult';
 import { handleMatchingMessage } from './lib/handleMatchingMessage';
 import { resolveWatchedRoomIds } from './lib/resolveWatchedRoomIds';
 import { PhotoDnaTestConnectionCommand } from './commands/PhotoDnaTestConnectionCommand';
@@ -91,20 +92,24 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         persistence: IPersistence,
     ): Promise<IMessage> {
         const logger = this.getLogger();
-        const result = await this.photoDnaService.matchMessage(message, logger, read, http);
-        if (result && result.IsMatch) {
-            await handleMatchingMessage(
-                result,
-                message,
-                read,
-                persistence,
-                builder,
-                http,
-                logger,
-                this.quarantineChannel,
-                this.enableAutomatedReport,
-                this.photoDnaService,
-            );
+        const outcome = await this.photoDnaService.matchMessage(message, logger, read, http);
+        if (outcome.verified) {
+            if (outcome.result.IsMatch) {
+                await handleMatchingMessage(
+                    outcome.result,
+                    message,
+                    read,
+                    persistence,
+                    builder,
+                    http,
+                    logger,
+                    this.quarantineChannel,
+                    this.enableAutomatedReport,
+                    this.photoDnaService,
+                );
+            }
+        } else {
+            await handleIndeterminateResult(outcome.reason, message, read, builder, logger, this.quarantineChannel);
         }
         return builder.getMessage();
     }

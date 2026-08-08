@@ -1,7 +1,7 @@
 import { IHttp, ILogger, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { ISlashCommand, SlashCommandContext } from '@rocket.chat/apps-engine/definition/slashcommands';
 import { PhotoDNACloudService } from '../lib/PhotoDNACloudService';
-import { IMatchResult } from '../lib/IMatchResult';
+import { MatchOutcome } from '../lib/MatchOutcome';
 import { SETTING_PHOTODNA_API_KEY } from '../config/Settings';
 import { getPhotoDnaTestImageBuffer } from './photoDnaTestImage';
 
@@ -47,8 +47,8 @@ export class PhotoDnaTestConnectionCommand implements ISlashCommand {
         }
 
         const logger = makeSilentLogger();
-        const result = await this.photoDnaService.checkConnection(http, read, logger, getPhotoDnaTestImageBuffer());
-        await reply(describeResult(result));
+        const outcome = await this.photoDnaService.checkConnection(http, read, logger, getPhotoDnaTestImageBuffer());
+        await reply(describeResult(outcome));
     }
 }
 
@@ -59,18 +59,10 @@ function makeSilentLogger(): ILogger {
     } as unknown as ILogger;
 }
 
-function describeResult(result: IMatchResult | undefined): string {
-    if (!result) {
-        return 'No response was received from the PhotoDNA API. Check your network connectivity.';
+function describeResult(outcome: MatchOutcome): string {
+    if (!outcome.verified) {
+        return `Verification failed. ${outcome.reason}`;
     }
-    if (result.Status?.Code === 3000) {
-        const source = result.MatchDetails?.MatchFlags?.[0]?.Source ?? 'n/a';
-        return `Connection successful. PhotoDNA responded with a valid match (Source: ${source}).`;
-    }
-    // an error response (e.g. an invalid key) comes back shaped as
-    // { statusCode, message } rather than the usual { Status, ... }
-    const rawError = result as unknown as { statusCode?: number; message?: string };
-    const detail = rawError.message ?? result.Status?.Description ?? 'Unknown error';
-    const code = rawError.statusCode ?? result.Status?.Code ?? 'unknown';
-    return `PhotoDNA did not return a successful response (code: ${code}). ${detail}`;
+    const source = outcome.result.MatchDetails?.MatchFlags?.[0]?.Source ?? 'n/a';
+    return `Connection successful. PhotoDNA responded with a valid match (Source: ${source}).`;
 }

@@ -1,6 +1,7 @@
 import { IHttp, ILogger, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IImageData } from './IImageData';
 import { IMatchResult } from './IMatchResult';
+import { MatchOutcome } from './MatchOutcome';
 import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
 import { SETTING_PHOTODNA_API_KEY, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from '../config/Settings';
 
@@ -47,7 +48,7 @@ export class PhotoDNACloudService {
      * @param read
      * @param http
      */
-    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<IMatchResult | undefined> {
+    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<MatchOutcome> {
         const imageAttachment: any = message.attachments![0];
         const imageMimeType = imageAttachment.imageType;
         const imageFileName = imageAttachment.title.value;
@@ -56,17 +57,16 @@ export class PhotoDNACloudService {
         // TODO better way to find image id?
         const imageBuffer = await read.getUploadReader().getBufferById(imageId)
         if (!imageBuffer) {
-            logger.warn('Could not load image buffer for image id ' + imageId);
-            return undefined;
+            return { verified: false, reason: 'Could not load the image buffer for this attachment.' };
         }
 
-        const result = await this.performMatchOperation(http, read, {
+        const outcome = await this.performMatchOperation(http, read, {
             contentType: imageMimeType,
             filename: imageFileName,
             data: imageBuffer
         }, logger);
-        logger.debug(`Performed match operation on ${imageFileName} with match result: ${result?.IsMatch}.`);
-        return result;
+        logger.debug(`Performed match operation on ${imageFileName}. verified: ${outcome.verified}.`);
+        return outcome;
     }
 
     /**
@@ -77,7 +77,7 @@ export class PhotoDNACloudService {
      * @param logger
      * @param testImageBuffer
      */
-    public async checkConnection(http: IHttp, read: IRead, logger: ILogger, testImageBuffer: Buffer): Promise<IMatchResult | undefined> {
+    public async checkConnection(http: IHttp, read: IRead, logger: ILogger, testImageBuffer: Buffer): Promise<MatchOutcome> {
         return this.performMatchOperation(http, read, {
             contentType: 'image/jpeg',
             filename: 'photodna-connection-test.jpg',
@@ -92,11 +92,10 @@ export class PhotoDNACloudService {
      * @param imageData
      * @see https://developer.microsoftmoderator.com/docs/services/57c7426e2703740ec4c9f4c3/operations/57c7426f27037407c8cc69e6
      */
-    private async performMatchOperation(http: IHttp, read: IRead, imageData: IImageData, logger: ILogger): Promise<IMatchResult | undefined> {
+    private async performMatchOperation(http: IHttp, read: IRead, imageData: IImageData, logger: ILogger): Promise<MatchOutcome> {
         const apiKey = await read.getEnvironmentReader().getSettings().getValueById(SETTING_PHOTODNA_API_KEY);
         if (!apiKey) {
-            logger.warn('SETTING_PHOTODNA_API_KEY was not found in environment.')
-            return undefined;
+            return { verified: false, reason: 'The "API Subscription Key" setting is not configured.' };
         }
 
         const content = JSON.stringify({
@@ -104,31 +103,42 @@ export class PhotoDNACloudService {
             'Value': imageData.data.toString('base64')
         })
 
-        const result = await http.post(this.Match_Post_Url, {
-            content,
-            params: {
-                'enhance': 'false'
-            },
-            headers: {
-                'Content-Type': 'application/json',
-                'Ocp-Apim-Subscription-Key': apiKey
-            }
-        })
+        let result;
+        try {
+            result = await http.post(this.Match_Post_Url, {
+                content,
+                params: {
+                    'enhance': 'false'
+                },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Ocp-Apim-Subscription-Key': apiKey
+                }
+            })
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            return { verified: false, reason: `A network error occurred while contacting the PhotoDNA API: ${detail}` };
+        }
 
         if (!result) {
-            logger.warn('We did not receive a response from the PhotoDNA API.')
-            return undefined;
+            return { verified: false, reason: 'No response was received from the PhotoDNA API.' };
         }
 
         if (!result.data) {
-            logger.warn('We received a response from the API, but it does not contain data.');
-            return undefined;
+            return { verified: false, reason: 'The PhotoDNA API response did not include any data.' };
         }
 
         logger.debug('We received data back from the API:', result.data);
-        const matchResult = result.data as IMatchResult;
+        const data = result.data as Partial<IMatchResult> & { statusCode?: number; message?: string };
+        if (data.Status?.Code !== 3000 || typeof data.IsMatch !== 'boolean') {
+            const code = data.statusCode ?? data.Status?.Code ?? 'unknown';
+            const detail = data.message ?? data.Status?.Description ?? 'unknown error';
+            return { verified: false, reason: `PhotoDNA returned an unexpected response (code: ${code}): ${detail}` };
+        }
+
+        const matchResult = data as IMatchResult;
         matchResult.ImageData = imageData;
-        return matchResult;
+        return { verified: true, result: matchResult };
     }
 
     /**

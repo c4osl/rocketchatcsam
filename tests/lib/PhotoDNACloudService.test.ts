@@ -101,7 +101,7 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
         }),
     } as unknown as IRead;
 
-    const result = await service.matchMessage(message, makeLogger(), read, http);
+    const outcome = await service.matchMessage(message, makeLogger(), read, http);
 
     assert.ok(requestedUrl?.endsWith('/Match'));
     assert.ok(requestedContent);
@@ -109,9 +109,38 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
     assert.equal(sentBody.DataRepresentation, 'inline');
     assert.equal(sentBody.Value, imageBuffer.toString('base64'));
 
-    assert.equal(result?.IsMatch, true);
-    assert.equal(result?.TrackingId, 'test-tracking-id');
-    assert.equal(result?.ImageData?.filename, 'img_130.jpg');
+    assert.equal(outcome.verified, true);
+    assert.ok(outcome.verified);
+    assert.equal(outcome.result.IsMatch, true);
+    assert.equal(outcome.result.TrackingId, 'test-tracking-id');
+    assert.equal(outcome.result.ImageData?.filename, 'img_130.jpg');
+});
+
+test('matchMessage reports an indeterminate outcome when the image buffer cannot be loaded', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage({
+        imageUrl: 'https://example.org/file-upload/upload-id-123/img_130.jpg',
+        imageType: 'image/jpeg',
+        title: { value: 'img_130.jpg' },
+    });
+
+    const http = { post: async () => ({ data: {} }) } as unknown as IHttp;
+    const read = {
+        getUploadReader: () => ({
+            getBufferById: async (_id: string) => undefined,
+        }),
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcome = await service.matchMessage(message, makeLogger(), read, http);
+
+    assert.equal(outcome.verified, false);
+    assert.ok(!outcome.verified);
+    assert.match(outcome.reason, /image buffer/i);
 });
 
 test('checkConnection parses a successful response from the API', async () => {
@@ -137,12 +166,71 @@ test('checkConnection parses a successful response from the API', async () => {
         }),
     } as unknown as IRead;
 
-    const result = await service.checkConnection(http, read, makeLogger(), imageBuffer);
-    assert.equal(result?.Status?.Code, 3000);
-    assert.equal(result?.IsMatch, true);
+    const outcome = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(outcome.verified, true);
+    assert.ok(outcome.verified);
+    assert.equal(outcome.result.Status?.Code, 3000);
+    assert.equal(outcome.result.IsMatch, true);
 });
 
-test('checkConnection surfaces an API error response (e.g. an invalid key)', async () => {
+test('checkConnection reports an indeterminate outcome when the API key setting is not configured', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const http = { post: async () => ({ data: {} }) } as unknown as IHttp;
+    const read = {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => undefined,
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcome = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(outcome.verified, false);
+    assert.ok(!outcome.verified);
+    assert.match(outcome.reason, /not configured/i);
+});
+
+test('checkConnection reports an indeterminate outcome when no response is received', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const http = { post: async () => undefined } as unknown as IHttp;
+    const read = {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcome = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(outcome.verified, false);
+    assert.ok(!outcome.verified);
+    assert.match(outcome.reason, /no response/i);
+});
+
+test('checkConnection reports an indeterminate outcome when the response has no data', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const http = { post: async () => ({}) } as unknown as IHttp;
+    const read = {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcome = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(outcome.verified, false);
+    assert.ok(!outcome.verified);
+    assert.match(outcome.reason, /did not include any data/i);
+});
+
+test('checkConnection reports an indeterminate outcome for an API error response (e.g. an invalid key)', async () => {
     const service = new PhotoDNACloudService();
     const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
 
@@ -160,9 +248,31 @@ test('checkConnection surfaces an API error response (e.g. an invalid key)', asy
         }),
     } as unknown as IRead;
 
-    const result = await service.checkConnection(http, read, makeLogger(), imageBuffer);
-    assert.equal(result?.Status, undefined);
-    assert.equal((result as unknown as { statusCode: number }).statusCode, 401);
+    const outcome = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(outcome.verified, false);
+    assert.ok(!outcome.verified);
+    assert.match(outcome.reason, /401/);
+    assert.match(outcome.reason, /Access denied/);
+});
+
+test('checkConnection reports an indeterminate outcome when the API call throws', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const http = { post: async () => { throw new Error('socket hang up'); } } as unknown as IHttp;
+    const read = {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcome = await service.checkConnection(http, read, makeLogger(), imageBuffer);
+    assert.equal(outcome.verified, false);
+    assert.ok(!outcome.verified);
+    assert.match(outcome.reason, /network error/i);
+    assert.match(outcome.reason, /socket hang up/);
 });
 
 function makeReportRead(enableTestMode: boolean): IRead {

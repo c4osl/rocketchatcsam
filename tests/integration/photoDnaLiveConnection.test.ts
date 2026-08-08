@@ -82,17 +82,6 @@ function makeMessage(imageFileName: string): IMessage {
     } as unknown as IMessage;
 }
 
-/**
- * JSON.stringify replacer that swaps any Buffer for a short summary, so a failed
- * assertion doesn't dump the raw image bytes into the test output.
- */
-function redactBuffers(_key: string, value: unknown): unknown {
-    if (value && typeof value === 'object' && (value as { type?: string }).type === 'Buffer' && Array.isArray((value as { data?: unknown }).data)) {
-        return `<Buffer, ${(value as { data: Array<number> }).data.length} bytes>`;
-    }
-    return value;
-}
-
 test(
     'PhotoDNACloudService can authenticate and match against the live PhotoDNA API',
     { skip: apiKey ? false : 'set PHOTODNA_API_KEY to run this integration test' },
@@ -101,20 +90,17 @@ test(
         const imageBuffer = fs.readFileSync(imagePath);
         const message = makeMessage(path.basename(imagePath));
 
-        const result = await service.matchMessage(message, makeLogger(), makeRead(imageBuffer), makeLiveHttp());
+        const outcome = await service.matchMessage(message, makeLogger(), makeRead(imageBuffer), makeLiveHttp());
 
-        // A missing result, or a Status.Code other than 3000 (e.g. 401 for an invalid
-        // key), means the connection or credential is broken, not the app's own logic.
-        assert.ok(result, 'expected a parsed match result from the live API');
-        assert.equal(
-            result?.Status?.Code,
-            3000,
-            `expected Status.Code 3000 (OK); the API responded with: ${JSON.stringify(result, redactBuffers)}`,
-        );
+        // An unverified outcome (e.g. a 401 for an invalid key) means the connection or
+        // credential is broken, not the app's own logic.
+        if (!outcome.verified) {
+            assert.fail(`expected a verified match result from the live API, got: ${outcome.reason}`);
+        }
 
         // img_130.jpg is one of Microsoft's official PhotoDNA sample images, documented
         // to always match against the "Test" source.
-        assert.equal(result?.IsMatch, true);
-        assert.equal(result?.MatchDetails?.MatchFlags?.[0]?.Source, 'Test');
+        assert.equal(outcome.result.IsMatch, true);
+        assert.equal(outcome.result.MatchDetails?.MatchFlags?.[0]?.Source, 'Test');
     },
 );
