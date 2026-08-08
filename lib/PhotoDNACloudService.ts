@@ -142,14 +142,17 @@ export class PhotoDNACloudService {
     }
 
     /**
-     * Report one or more content violations from the same message to NCMEC in a single report
+     * Report one or more content violations from the same message to NCMEC in a single report.
+     * The message has already been quarantined by the time this runs, so a failure here means
+     * the report itself needs manual follow-up, not that the match was wrong.
      * @param matchResults
      * @param http
      * @param message
      * @param read
+     * @param logger
      * @see https://developer.microsoftmoderator.com/docs/services/57c7426e2703740ec4c9f4c3/operations/57c77fdee3a97812ecf8bdeb
      */
-    public async performReportOperation(matchResults: Array<IMatchResult>, http: IHttp, message: IMessage, read: IRead): Promise<any> {
+    public async performReportOperation(matchResults: Array<IMatchResult>, http: IHttp, message: IMessage, read: IRead, logger: ILogger): Promise<void> {
         const apiKey = await read.getEnvironmentReader().getSettings().getValueById(SETTING_PHOTODNA_API_KEY);
         const ncmecUser = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_USER);
         const ncmecPassword = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_PASSWORD);
@@ -157,29 +160,41 @@ export class PhotoDNACloudService {
         const ncmecReporterName = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_REPORTER_NAME);
         const ncmecReporterEmail = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_REPORTER_EMAIL);
         const enableTestMode = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_ENABLE_TEST_MODE);
-        if (apiKey && ncmecUser && ncmecPassword) {
-            const reportBody: Record<string, unknown> = {
-                'OrgName': ncmecOrgName,
-                'ReporterName': ncmecReporterName,
-                'ReporterEmail': ncmecReporterEmail,
-                'IncidentTime': (message.createdAt) ? message.createdAt.toISOString() : '',
-                'ReporteeName': message.sender.username,
-                'ReporteeIPAddress': '127.0.0.1',
-                'ViolationContentCollection': matchResults.map((matchResult) => ({
-                    'Name': (matchResult.ImageData) ? matchResult.ImageData.filename : 'noFileName',
-                    'Value': (matchResult.ImageData) ? matchResult.ImageData.data.toString('base64') : 'noImageData'
-                })),
-                'AdditionalMetadata': [
-                    {
-                        'Key': 'IsTest', 'Value': 'true'
-                    }
-                ]
-            };
-            if (!enableTestMode) {
-                delete reportBody['AdditionalMetadata'];
-            }
-            const content = JSON.stringify(reportBody);
-            const result = await http.post(this.Report_Post_Url, {
+
+        if (!apiKey || !ncmecUser || !ncmecPassword) {
+            logger.error(
+                'NCMEC-REPORT-SKIPPED',
+                `message ID: ${message.id}`,
+                'Automated reporting is enabled but the NCMEC credentials are not fully configured.',
+            );
+            return;
+        }
+
+        const reportBody: Record<string, unknown> = {
+            'OrgName': ncmecOrgName,
+            'ReporterName': ncmecReporterName,
+            'ReporterEmail': ncmecReporterEmail,
+            'IncidentTime': (message.createdAt) ? message.createdAt.toISOString() : '',
+            'ReporteeName': message.sender.username,
+            'ReporteeIPAddress': '127.0.0.1',
+            'ViolationContentCollection': matchResults.map((matchResult) => ({
+                'Name': (matchResult.ImageData) ? matchResult.ImageData.filename : 'noFileName',
+                'Value': (matchResult.ImageData) ? matchResult.ImageData.data.toString('base64') : 'noImageData'
+            })),
+            'AdditionalMetadata': [
+                {
+                    'Key': 'IsTest', 'Value': 'true'
+                }
+            ]
+        };
+        if (!enableTestMode) {
+            delete reportBody['AdditionalMetadata'];
+        }
+        const content = JSON.stringify(reportBody);
+
+        let result;
+        try {
+            result = await http.post(this.Report_Post_Url, {
                 content,
                 headers: {
                     'Ocp-Apim-Subscription-Key': apiKey,
@@ -187,8 +202,22 @@ export class PhotoDNACloudService {
                     'x-pwd': ncmecPassword
                 }
             });
-            return result;
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            logger.error('NCMEC-REPORT-FAILED', `message ID: ${message.id}`, `A network error occurred while filing the NCMEC report: ${detail}`);
+            return;
         }
+
+        if (!result || !result.data) {
+            logger.error(
+                'NCMEC-REPORT-FAILED',
+                `message ID: ${message.id}`,
+                'No response, or a response with no data, was received from the NCMEC report endpoint.',
+            );
+            return;
+        }
+
+        logger.warn('NCMEC-REPORT-RESULT', `message ID: ${message.id}`, result.data);
     }
 
     public isSupportedImageMimeType(mimeType: string): boolean {

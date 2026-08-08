@@ -406,7 +406,7 @@ test('performReportOperation includes the IsTest flag when test mode is enabled'
     } as unknown as IHttp;
 
     const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
-    await service.performReportOperation([matchResult], http, message, makeReportRead(true));
+    await service.performReportOperation([matchResult], http, message, makeReportRead(true), makeLogger());
 
     assert.ok(requestedContent);
     const sentBody = JSON.parse(requestedContent as string);
@@ -426,7 +426,7 @@ test('performReportOperation omits the IsTest flag when test mode is disabled', 
     } as unknown as IHttp;
 
     const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
-    await service.performReportOperation([matchResult], http, message, makeReportRead(false));
+    await service.performReportOperation([matchResult], http, message, makeReportRead(false), makeLogger());
 
     assert.ok(requestedContent);
     const sentBody = JSON.parse(requestedContent as string);
@@ -457,11 +457,67 @@ test('performReportOperation includes every matched image in a single ViolationC
             ImageData: { contentType: 'image/jpeg', filename: 'second.jpg', data: Buffer.from('second') },
         },
     ];
-    await service.performReportOperation(matchResults, http, message, makeReportRead(false));
+    await service.performReportOperation(matchResults, http, message, makeReportRead(false), makeLogger());
 
     assert.ok(requestedContent);
     const sentBody = JSON.parse(requestedContent as string);
     assert.equal(sentBody.ViolationContentCollection.length, 2);
     assert.equal(sentBody.ViolationContentCollection[0].Name, 'first.jpg');
     assert.equal(sentBody.ViolationContentCollection[1].Name, 'second.jpg');
+});
+
+test('performReportOperation logs distinctly and does not call the API when NCMEC credentials are not configured', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage(undefined);
+
+    let httpCalled = false;
+    const http = { post: async () => { httpCalled = true; return { data: { ok: true } }; } } as unknown as IHttp;
+    const read = {
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => undefined,
+            }),
+        }),
+    } as unknown as IRead;
+
+    const errorCalls: Array<Array<unknown>> = [];
+    const logger = { error: (...args: Array<unknown>) => { errorCalls.push(args); }, warn: () => undefined } as unknown as ILogger;
+
+    const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
+    await service.performReportOperation([matchResult], http, message, read, logger);
+
+    assert.equal(httpCalled, false);
+    assert.equal(errorCalls.length, 1);
+    assert.equal(errorCalls[0][0], 'NCMEC-REPORT-SKIPPED');
+});
+
+test('performReportOperation logs distinctly when the NCMEC API call throws', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage(undefined);
+
+    const http = { post: async () => { throw new Error('socket hang up'); } } as unknown as IHttp;
+    const errorCalls: Array<Array<unknown>> = [];
+    const logger = { error: (...args: Array<unknown>) => { errorCalls.push(args); }, warn: () => undefined } as unknown as ILogger;
+
+    const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
+    await service.performReportOperation([matchResult], http, message, makeReportRead(false), logger);
+
+    assert.equal(errorCalls.length, 1);
+    assert.equal(errorCalls[0][0], 'NCMEC-REPORT-FAILED');
+    assert.ok(errorCalls[0].some((arg) => typeof arg === 'string' && /socket hang up/.test(arg)));
+});
+
+test('performReportOperation logs distinctly when the NCMEC API response has no data', async () => {
+    const service = new PhotoDNACloudService();
+    const message = makeMessage(undefined);
+
+    const http = { post: async () => ({}) } as unknown as IHttp;
+    const errorCalls: Array<Array<unknown>> = [];
+    const logger = { error: (...args: Array<unknown>) => { errorCalls.push(args); }, warn: () => undefined } as unknown as ILogger;
+
+    const matchResult = { Status: { Code: 3000, Description: 'OK' }, TrackingId: 'x' };
+    await service.performReportOperation([matchResult], http, message, makeReportRead(false), logger);
+
+    assert.equal(errorCalls.length, 1);
+    assert.equal(errorCalls[0][0], 'NCMEC-REPORT-FAILED');
 });

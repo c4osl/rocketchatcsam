@@ -99,7 +99,6 @@ test('files a single report covering every matched attachment when automated rep
     service.performReportOperation = async (matchResults: Array<IMatchResult>) => {
         reportCallCount += 1;
         reportedMatchResults = matchResults;
-        return { ok: true };
     };
 
     await handleMatchingMessage(

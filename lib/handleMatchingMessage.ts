@@ -45,7 +45,6 @@ export async function handleMatchingMessage(
     await moveToQuarantine(read, builder, logger, quarantineChannel);
 
     if (enableAutomatedReport) {
-        const result = await photoDnaService.performReportOperation(matchResults, http, message, read);
-        logger.warn('Violation-Report-Result', result);
+        await photoDnaService.performReportOperation(matchResults, http, message, read, logger);
     }
 }
