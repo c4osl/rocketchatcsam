@@ -61,7 +61,7 @@ test('does not serialize matched image bytes into the log line', async () => {
         makeBuilder(),
         {} as IHttp,
         logger,
-        '',
+        undefined,
         false,
         new PhotoDNACloudService(),
     );
@@ -82,7 +82,7 @@ test('logs every matched attachment when a message has more than one', async () 
         makeBuilder(),
         {} as IHttp,
         logger,
-        '',
+        undefined,
         false,
         new PhotoDNACloudService(),
     );
@@ -109,7 +109,7 @@ test('files a single report covering every matched attachment when automated rep
         makeBuilder(),
         {} as IHttp,
         logger,
-        '',
+        undefined,
         true,
         service,
     );

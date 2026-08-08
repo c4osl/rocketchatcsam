@@ -20,6 +20,7 @@ import { SETTING_QUARANTINE_CHANNEL, SETTING_LIMIT_ANALYSIS_TO_CHANNELS, SETTING
 import { PhotoDNACloudService } from './lib/PhotoDNACloudService';
 import { handleIndeterminateResult } from './lib/handleIndeterminateResult';
 import { handleMatchingMessage } from './lib/handleMatchingMessage';
+import { resolveQuarantineRoomId } from './lib/resolveQuarantineRoomId';
 import { resolveWatchedRoomIds } from './lib/resolveWatchedRoomIds';
 import { PhotoDnaTestConnectionCommand } from './commands/PhotoDnaTestConnectionCommand';
 
@@ -36,6 +37,7 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
     private photoDnaService: PhotoDNACloudService;
 
     private quarantineChannel: string;
+    private quarantineRoomId: string | undefined;
     private enableAutomatedReport: boolean;
     private watchedRoomsId: Set<string> | undefined;
     private watchDMs: boolean;
@@ -54,6 +56,7 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
 
     public async onEnable(environment: IEnvironmentRead, _configurationModify: IConfigurationModify): Promise<boolean> {
         this.quarantineChannel = await environment.getSettings().getValueById(SETTING_QUARANTINE_CHANNEL);
+        this.quarantineRoomId = await resolveQuarantineRoomId(this.quarantineChannel, this.getAccessors().reader, this.getLogger());
         this.enableAutomatedReport = await environment.getSettings().getValueById(SETTING_ENABLE_AUTOMATED_REPORT);
         const limitRoomNamesCsv = await environment.getSettings().getValueById(SETTING_LIMIT_ANALYSIS_TO_CHANNELS);
         this.watchedRoomsId = await resolveWatchedRoomIds(limitRoomNamesCsv, this.getAccessors().reader, this.getLogger());
@@ -64,6 +67,7 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
     public async onSettingUpdated(setting: ISetting, _configurationModify: IConfigurationModify, read: IRead, _http: IHttp): Promise<void> {
         if (SETTING_QUARANTINE_CHANNEL === setting.id) {
             this.quarantineChannel = setting.value;
+            this.quarantineRoomId = await resolveQuarantineRoomId(this.quarantineChannel, read, this.getLogger());
         } else if (SETTING_LIMIT_ANALYSIS_TO_CHANNELS === setting.id) {
             this.watchedRoomsId = await resolveWatchedRoomIds(setting.value, read, this.getLogger());
         } else if (SETTING_WATCH_DMS === setting.id) {
@@ -117,12 +121,12 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
                 builder,
                 http,
                 logger,
-                this.quarantineChannel,
+                this.quarantineRoomId,
                 this.enableAutomatedReport,
                 this.photoDnaService,
             );
         } else if (unverifiedReasons.length > 0) {
-            await handleIndeterminateResult(unverifiedReasons.join(' | '), message, read, builder, logger, this.quarantineChannel);
+            await handleIndeterminateResult(unverifiedReasons.join(' | '), message, read, builder, logger, this.quarantineRoomId);
         }
         return builder.getMessage();
     }

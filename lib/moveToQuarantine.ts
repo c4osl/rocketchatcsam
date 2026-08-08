@@ -1,28 +1,31 @@
 import { ILogger, IMessageBuilder, IRead } from '@rocket.chat/apps-engine/definition/accessors';
-import { IRoom } from '@rocket.chat/apps-engine/definition/rooms/IRoom';
 
 /**
- * Moves a message to the configured quarantine channel. If no quarantine channel is
- * configured, or the configured channel can't be found, removes the image attachment
- * instead so at least the flagged image doesn't get delivered.
+ * Moves a message to the quarantine room identified by quarantineRoomId (see
+ * resolveQuarantineRoomId). If no quarantine room is configured/resolved, or the room has
+ * since been deleted, removes the image attachment instead so at least the flagged image
+ * doesn't get delivered.
  * @param read
  * @param builder
  * @param logger
- * @param quarantineChannel
+ * @param quarantineRoomId
  */
-export async function moveToQuarantine(read: IRead, builder: IMessageBuilder, logger: ILogger, quarantineChannel: string): Promise<void> {
-    if (quarantineChannel) {
-        const targetRoom: IRoom | undefined = await read.getRoomReader().getByName(quarantineChannel);
-        if (targetRoom) {
-            // we have a target room - move it to this room
-            // the original user uploading currently does not get notified
-            builder.setRoom(targetRoom);
-        } else {
-            logger.warn('Defined target Room/Channel does not exist: ' + quarantineChannel);
-            // we have no target room - at least remove the image
-            builder.removeAttachment(0);
-        }
+export async function moveToQuarantine(read: IRead, builder: IMessageBuilder, logger: ILogger, quarantineRoomId: string | undefined): Promise<void> {
+    if (!quarantineRoomId) {
+        logger.warn('No usable quarantine channel is configured; removing the flagged attachment instead.');
+        builder.removeAttachment(0);
+        return;
+    }
+
+    const targetRoom = await read.getRoomReader().getById(quarantineRoomId);
+    if (targetRoom) {
+        // we have a target room - move it to this room
+        // the original user uploading currently does not get notified
+        builder.setRoom(targetRoom);
     } else {
-        logger.warn('No target channel for quarantined messages provided');
+        logger.error(
+            `Configured quarantine room (id: ${quarantineRoomId}) could not be found, it may have been deleted. Removing the flagged attachment instead.`,
+        );
+        builder.removeAttachment(0);
     }
 }

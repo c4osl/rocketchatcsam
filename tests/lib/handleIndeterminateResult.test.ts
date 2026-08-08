@@ -17,7 +17,7 @@ function makeLogger(): { logger: ILogger; errorCalls: Array<Array<unknown>> } {
 function makeRead(targetRoom: IRoom | undefined): IRead {
     return {
         getRoomReader: () => ({
-            getByName: async (_name: string) => targetRoom,
+            getById: async (_id: string) => targetRoom,
         }),
     } as unknown as IRead;
 }
@@ -45,7 +45,7 @@ test('logs at error severity and includes the reason', async () => {
     const { logger, errorCalls } = makeLogger();
     const { builder } = makeBuilder();
 
-    await handleIndeterminateResult('No response was received from the PhotoDNA API.', makeMessage(), makeRead(undefined), builder, logger, '');
+    await handleIndeterminateResult('No response was received from the PhotoDNA API.', makeMessage(), makeRead(undefined), builder, logger, undefined);
 
     assert.equal(errorCalls.length, 1);
     assert.ok(errorCalls[0].some((arg) => typeof arg === 'string' && arg.includes('No response was received from the PhotoDNA API.')));
@@ -55,7 +55,7 @@ test('prepends a notice naming the reason to the message text', async () => {
     const { logger } = makeLogger();
     const { builder, getText } = makeBuilder();
 
-    await handleIndeterminateResult('A network error occurred.', makeMessage(), makeRead(undefined), builder, logger, '');
+    await handleIndeterminateResult('A network error occurred.', makeMessage(), makeRead(undefined), builder, logger, undefined);
 
     assert.match(getText(), /^PhotoDNA verification failed \(A network error occurred\.\)/);
     assert.match(getText(), /not a confirmed match/i);
@@ -67,7 +67,17 @@ test('moves the message to the quarantine channel when one is configured', async
     const { builder, getRoomCalls } = makeBuilder();
     const targetRoom = { id: 'quarantine-room-id' } as IRoom;
 
-    await handleIndeterminateResult('reason', makeMessage(), makeRead(targetRoom), builder, logger, 'quarantine-channel');
+    await handleIndeterminateResult('reason', makeMessage(), makeRead(targetRoom), builder, logger, 'quarantine-room-id');
 
     assert.deepEqual(getRoomCalls, [targetRoom]);
+});
+
+test('logs at error severity when the configured quarantine room can no longer be found', async () => {
+    const { logger, errorCalls } = makeLogger();
+    const { builder } = makeBuilder();
+
+    await handleIndeterminateResult('reason', makeMessage(), makeRead(undefined), builder, logger, 'quarantine-room-id');
+
+    assert.equal(errorCalls.length, 2, 'expected one error for the verification failure and one for the missing quarantine room');
+    assert.ok(errorCalls.some((call) => call.some((arg) => typeof arg === 'string' && /could not be found/i.test(arg))));
 });

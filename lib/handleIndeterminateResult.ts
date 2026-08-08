@@ -11,7 +11,7 @@ import { moveToQuarantine } from './moveToQuarantine';
  * @param read
  * @param builder
  * @param logger
- * @param quarantineChannel
+ * @param quarantineRoomId
  */
 export async function handleIndeterminateResult(
     reason: string,
@@ -19,7 +19,7 @@ export async function handleIndeterminateResult(
     read: IRead,
     builder: IMessageBuilder,
     logger: ILogger,
-    quarantineChannel: string,
+    quarantineRoomId: string | undefined,
 ): Promise<void> {
     logger.error(
         'CSEM-VERIFICATION-FAILED',
@@ -31,5 +31,5 @@ export async function handleIndeterminateResult(
     const notice = `PhotoDNA verification failed (${reason}). Routed for manual review, not a confirmed match.`;
     builder.setText(`${notice}\n\n${builder.getText()}`);
 
-    await moveToQuarantine(read, builder, logger, quarantineChannel);
+    await moveToQuarantine(read, builder, logger, quarantineRoomId);
 }

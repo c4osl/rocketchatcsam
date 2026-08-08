@@ -14,7 +14,7 @@ import { PhotoDNACloudService } from './PhotoDNACloudService';
  * @param builder
  * @param http
  * @param logger
- * @param quarantineChannel
+ * @param quarantineRoomId
  * @param enableAutomatedReport
  * @param photoDnaService
  */
@@ -26,7 +26,7 @@ export async function handleMatchingMessage(
     builder: IMessageBuilder,
     http: IHttp,
     logger: ILogger,
-    quarantineChannel: string,
+    quarantineRoomId: string | undefined,
     enableAutomatedReport: boolean,
     photoDnaService: PhotoDNACloudService,
 ): Promise<void> {
@@ -42,7 +42,7 @@ export async function handleMatchingMessage(
         );
     }
 
-    await moveToQuarantine(read, builder, logger, quarantineChannel);
+    await moveToQuarantine(read, builder, logger, quarantineRoomId);
 
     if (enableAutomatedReport) {
         await photoDnaService.performReportOperation(matchResults, http, message, read, logger);
