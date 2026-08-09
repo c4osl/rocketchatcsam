@@ -55,7 +55,10 @@ export class PhotoDNACloudService {
             }
 
             const imageMimeType = imageAttachment.imageType;
-            const imageFileName = imageAttachment.title.value;
+            // title is optional on IMessageAttachment. Ordinary uploads always set it, but
+            // an attachment built some other way might not, so fall back to fileId rather
+            // than crash the whole matchMessage call over one missing title
+            const imageFileName = imageAttachment.title?.value ?? imageAttachment.fileId;
             const imageBuffer = await read.getUploadReader().getBufferById(imageAttachment.fileId)
             if (!imageBuffer) {
                 results.push({

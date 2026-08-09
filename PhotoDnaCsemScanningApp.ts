@@ -95,7 +95,7 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         builder: IMessageBuilder,
         read: IRead,
         http: IHttp,
-        persistence: IPersistence,
+        _persistence: IPersistence,
     ): Promise<IMessage> {
         const logger = this.getLogger();
         const attachmentOutcomes = await this.photoDnaService.matchMessage(message, logger, read, http);
@@ -122,7 +122,6 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
                 matchedAttachmentIndexes,
                 message,
                 read,
-                persistence,
                 builder,
                 http,
                 logger,

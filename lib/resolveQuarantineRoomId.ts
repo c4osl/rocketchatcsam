@@ -13,7 +13,7 @@ export async function resolveQuarantineRoomId(quarantineChannel: string, read: I
         return undefined;
     }
 
-    const room = await read.getRoomReader().getByName(quarantineChannel);
+    const room = await read.getRoomReader().getByName(quarantineChannel.toLowerCase());
     if (!room) {
         logger.error(
             `Configured quarantine channel "${quarantineChannel}" does not exist. Quarantining is completely disabled until this is fixed.`,

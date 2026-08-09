@@ -1,4 +1,4 @@
-import { IHttp, ILogger, IMessageBuilder, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IHttp, ILogger, IMessageBuilder, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
 import { IMatchResult } from './IMatchResult';
 import { moveToQuarantine } from './moveToQuarantine';
@@ -11,7 +11,6 @@ import { PhotoDNACloudService } from './PhotoDNACloudService';
  * @param matchedAttachmentIndexes
  * @param message
  * @param read
- * @param persistence
  * @param builder
  * @param http
  * @param logger
@@ -24,7 +23,6 @@ export async function handleMatchingMessage(
     matchedAttachmentIndexes: Array<number>,
     message: IMessage,
     read: IRead,
-    persistence: IPersistence,
     builder: IMessageBuilder,
     http: IHttp,
     logger: ILogger,

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import type { IHttp, ILogger, IMessageBuilder, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import type { IHttp, ILogger, IMessageBuilder, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import type { IMessage } from '@rocket.chat/apps-engine/definition/messages';
 import { handleMatchingMessage } from '../../lib/handleMatchingMessage';
 import { IMatchResult } from '../../lib/IMatchResult';
@@ -73,7 +73,6 @@ test('does not serialize matched image bytes into the log line', async () => {
         [0],
         makeMessage(),
         makeRead(),
-        {} as IPersistence,
         builder,
         {} as IHttp,
         logger,
@@ -96,7 +95,6 @@ test('logs every matched attachment when a message has more than one', async () 
         [0, 1],
         makeMessage(),
         makeRead(),
-        {} as IPersistence,
         builder,
         {} as IHttp,
         logger,
@@ -125,7 +123,6 @@ test('files a single report covering every matched attachment when automated rep
         [0, 1],
         makeMessage(),
         makeRead(),
-        {} as IPersistence,
         builder,
         {} as IHttp,
         logger,
@@ -140,7 +137,7 @@ test('files a single report covering every matched attachment when automated rep
 
 test('when quarantine is unavailable, removes only the attachment(s) that matched, leaving the rest of the message intact', async () => {
     const { logger } = makeLogger();
-    // 4 attachments; only the third (index 2) matched
+    // 4 attachments. Only the third (index 2) matched
     const { builder, getRemainingLabels } = makeBuilder(['first', 'second', 'third', 'fourth']);
 
     await handleMatchingMessage(
@@ -148,7 +145,6 @@ test('when quarantine is unavailable, removes only the attachment(s) that matche
         [2],
         makeMessage(),
         makeRead(),
-        {} as IPersistence,
         builder,
         {} as IHttp,
         logger,
@@ -162,7 +158,7 @@ test('when quarantine is unavailable, removes only the attachment(s) that matche
 
 test('when quarantine is unavailable and multiple attachments matched, removes exactly those and nothing else', async () => {
     const { logger } = makeLogger();
-    // 4 attachments; the second (index 1) and fourth (index 3) matched
+    // 4 attachments. The second (index 1) and fourth (index 3) matched
     const { builder, getRemainingLabels } = makeBuilder(['first', 'second', 'third', 'fourth']);
 
     await handleMatchingMessage(
@@ -170,7 +166,6 @@ test('when quarantine is unavailable and multiple attachments matched, removes e
         [1, 3],
         makeMessage(),
         makeRead(),
-        {} as IPersistence,
         builder,
         {} as IHttp,
         logger,

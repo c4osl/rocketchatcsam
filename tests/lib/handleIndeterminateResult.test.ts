@@ -102,7 +102,7 @@ test('logs at error severity when the configured quarantine room can no longer b
 
 test('when quarantine is unavailable, removes only the attachment(s) that were indeterminate, leaving the rest of the message intact', async () => {
     const { logger } = makeLogger();
-    // 3 attachments; only the third (index 2) was indeterminate
+    // 3 attachments. Only the third (index 2) was indeterminate
     const { builder, getRemainingLabels } = makeBuilder(['first', 'second', 'third']);
 
     await handleIndeterminateResult('reason', [2], makeMessage(), makeRead(undefined), builder, logger, undefined);

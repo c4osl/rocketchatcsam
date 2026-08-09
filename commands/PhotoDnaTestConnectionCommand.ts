@@ -55,7 +55,6 @@ export class PhotoDnaTestConnectionCommand implements ISlashCommand {
 function makeSilentLogger(): ILogger {
     return {
         debug: () => undefined,
-        warn: () => undefined,
     } as unknown as ILogger;
 }
 

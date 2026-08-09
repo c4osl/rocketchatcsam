@@ -141,6 +141,47 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
     assert.equal(outcomes[0].outcome.result.ImageData?.filename, 'img_130.jpg');
 });
 
+test('matchMessage does not crash on an attachment with no title, falling back to fileId', async () => {
+    const service = new PhotoDNACloudService();
+    const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
+
+    const message = makeMessage({
+        imageUrl: 'https://example.org/file-upload/upload-id-123/img_130.jpg',
+        imageType: 'image/jpeg',
+        fileId: 'file-id-123',
+        // no title, unlike ordinary uploads, IMessageAttachment declares it optional
+    });
+
+    const http = {
+        post: async () => ({
+            data: {
+                Status: { Code: 3000, Description: 'OK' },
+                TrackingId: 'test-tracking-id',
+                IsMatch: true,
+                MatchDetails: { MatchFlags: [{ Source: 'Test', Violations: ['A1'], MatchDistance: 0 }] },
+            },
+        }),
+    } as unknown as IHttp;
+
+    const read = {
+        getUploadReader: () => ({
+            getBufferById: async (_id: string) => imageBuffer,
+        }),
+        getEnvironmentReader: () => ({
+            getSettings: () => ({
+                getValueById: async (_id: string) => 'fake-api-key',
+            }),
+        }),
+    } as unknown as IRead;
+
+    const outcomes = await service.matchMessage(message, makeLogger(), read, http);
+
+    assert.equal(outcomes.length, 1);
+    assert.equal(outcomes[0].outcome.verified, true);
+    assert.ok(outcomes[0].outcome.verified);
+    assert.equal(outcomes[0].outcome.result.ImageData?.filename, 'file-id-123');
+});
+
 test('matchMessage scans every image attachment, not just the first', async () => {
     const service = new PhotoDNACloudService();
     const imageBuffer = fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'SampleImages', 'img_130.jpg'));
@@ -226,7 +267,7 @@ test('matchMessage skips non-image and unsupported attachments while still scann
     const outcomes = await service.matchMessage(message, makeLogger(), read, http);
 
     assert.equal(outcomes.length, 1);
-    // the scanned attachment is the third in the list (index 2); pins that skipped
+    // the scanned attachment is the third in the list (index 2). Pins that skipped
     // attachments don't throw off the index used to identify which one this outcome is for
     assert.equal(outcomes[0].attachmentIndex, 2);
     assert.equal(outcomes[0].outcome.verified, true);
