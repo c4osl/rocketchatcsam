@@ -1,129 +1,19 @@
-PhotoDNA CSEM scanning App
-==========================
+Rocket.Chat PhotoDNA CSEM-Scanning App
+=======================================
+
+[![CI](https://github.com/c4osl/rocketchatcsam/actions/workflows/ci.yml/badge.svg)](https://github.com/c4osl/rocketchatcsam/actions/workflows/ci.yml)
+[![ESLint](https://img.shields.io/badge/lint-eslint-4B32C3?logo=eslint&logoColor=white)](eslint.config.js)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js >= 22](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 This [Rocket.Chat App](https://developer.rocket.chat/docs/rocketchat-apps-engine) validates uploaded images against the [Microsoft PhotoDNA cloud service](https://www.microsoft.com/en-us/photodna), moves them to a quarantine channel or deletes them before they are shown, and, when configured to do so, reports each match to the National Center for Missing and Exploited Children (NCMEC).
 
-Prerequisites
-=============
-
-* Git
-* Node.js version 22 or newer (required by `@rocket.chat/apps-compiler`, which `rc-apps package`/`deploy` depend on)
-* [Rocket.Chat Apps-Engine CLI](https://developer.rocket.chat/docs/getting-started-with-apps-engine)
-* A Rocket.Chat server version 3.8.0 or newer
-
-Installation
-============
-
-Method 1: package as .zip
--------------------------
-
-1. Clone this repository
-2. run `npm install`
-3. run `rc-apps package`
-
-The resulting package goes in the 'dist' directory in the project folder as a .zip file. Rocket.Chat administrators can upload the .zip as a Private App through the Marketplace interface.
-
-![Getting to the Marketplace](doc/marketplace.png)
-![Uploading a Private App](doc/installPrivateApp.png)
-
-Method 2: deploy directly to server
------------------------------------
-
-1. Clone this repository
-2. run `npm install`
-3. Create a file called ``.rcappsconfig`` that resembles this:
-```
-{
-    "url": "https://server.url",
-    "username": "admin_username",
-    "password": "admin_password",
-    "ignoredFiles": [
-        "**/README.md",
-        "**/package-lock.json",
-        "**/package.json",
-        "**/eslint.config.js",
-        "**/tsconfig.json",
-        "**/*.js",
-        "**/*.js.map",
-        "**/*.d.ts",
-        "**/*.spec.ts",
-        "**/*.test.ts",
-        "**/dist/**",
-        "**/.*"
-    ]
-}
-```
-4. run `rc-apps deploy`
-
-This method is very convenient for localhost testing and debugging, when you are making frequent minor changes and need to deploy them to your local RC instance.
-
-Obtaining the required configuration credentials
-================================================
-
-* The PhotoDNA credentials can be acquired via https://www.microsoft.com/en-us/photodna/cloudservice.
-* To receive the NCMEC credentials for automated report functionality, write an email to espteam@ncmec.org to request the registration form.
-
-Configuration
-=============
-
-As Administrator go to Marketplace > Private Apps and click on `Photo DNA CSEM-scanning`. This will open the App Info page:
-
-![App Info](doc/settings.png)
-
-The service will not be active until you enter your API key in the `API Subscription Key` field. This corresponds to the *primary key* received during the PhotoDNA registration.
-
-In `CSEM Quarantine Target Channel` you have to provide the channel ID where quarantined messages will move to. Please be sure to have this channel created like shown in the following image:
-
-![targetChannel](doc/privateQuarantineChannel.png)
-
-If the target channel does not exist, the image will be removed from the message.
-
-In `Limit image analysis to specified channels` you may provide a comma-separated list of channels to limit the analysis to. In the depicted setting, only images uploaded in the channel `testchannel` will be subject to investigation by this app.
-
-Verifying your API key
-=======================
-
-Once you've entered your API Subscription Key, an administrator can run `/photodna-test-connection` in any channel to verify the key and network connectivity, without needing to upload an image first. The app sends a small bundled sample image to PhotoDNA and replies (visible only to you) with either a success confirmation or the actual error PhotoDNA returned (e.g. an invalid key), so there's no guessing whether the key or the connection is the problem. Non-administrators who run the command are told they don't have permission.
-
-Testing
-=======
-
-Automated unit tests live under `tests/`, mirroring the shape of the app's own code (`tests/config/`, `tests/lib/`), and run via `npm test`. These use mocked `IHttp`/`IRead` accessors, so they verify the app's own logic without making any network calls.
-
-The `tests/fixtures/SampleImages` directory contains a set of test images provided by Microsoft for exercising calls to the PhotoDNA cloud service.
-
-`tests/integration/photoDnaLiveConnection.test.ts` makes a real call to the live PhotoDNA API using one of these sample images, to verify your API key and network connectivity actually work, without needing a running Rocket.Chat server. It's excluded from `npm test` since it requires a real key and network access. To run it:
-
-```
-PHOTODNA_API_KEY="your-real-key-here" npm run integration-test
-```
-
-Without `PHOTODNA_API_KEY` set, the test skips cleanly instead of failing. With an invalid key, it fails with the API's actual error response (e.g. a 401), so there's no guessing whether the key or the app's request logic is at fault.
-
-Troubleshooting
-===============
-
-The app generates logs when it screens images. They are reachable from the App Info page:
-
-![logs](doc/logs.png)
-
-Setting up a local Rocket.Chat instance for testing and debugging is [very easy with Docker](https://docs.rocket.chat/deploy/deploy-rocket.chat/deploy-with-docker-and-docker-compose). If Docker Desktop's licensing terms are not favorable for your situation, [Rancher Desktop](https://rancherdesktop.io/) is an effective, free alternative.
-
-If you're trying to use `npm` in PowerShell and a package has an @ symbol in the name, be sure to quote the package name, otherwise PowerShell may interpret the @ as the splat operator.
-
-`@rocket.chat/apps-cli@1.14.0` uses a custom TypeScript transpiler, `@rocket.chat/apps-compiler@0.7.0`, which currently has a bug that affects this project. When you run `rc-apps package` or `rc-apps deploy`, it fails with `TypeError: <SomeClass>_1.<SomeClass> is not a constructor` for any class in its own file that's instantiated in the main App class's constructor. The cause is `AppsEngineValidator.compiledRequire()` incorrectly unwrapping modules that have exactly one export, returning the bare class instead of the module's exports object. It only affects that one packaging-time sanity check, not the actual compiled app or how a real Rocket.Chat server runs it. You can work around this by opening `TypescriptCompiler.js` and commenting out line 172.
-* Line 172 as of `apps-compiler@0.7.0` (the exact line may differ in other versions): `this.appValidator.checkInheritance(posixClassFile.replace(/\.ts$/, ""), result);`
-* Windows, if installed globally: `%AppData%\npm\node_modules\@rocket.chat\apps-cli\node_modules\@rocket.chat\apps-compiler\compiler\TypescriptCompiler.js`
-* *nix, if installed globally: `$(npm list -g | head -1)/node_modules/@rocket.chat/apps-cli/node_modules/@rocket.chat/apps-compiler/compiler/TypescriptCompiler.js`
-* If run via `npx`, it's cached instead, e.g. `%LocalAppData%\npm-cache\_npx\<hash>\node_modules\@rocket.chat\apps-compiler\compiler\TypescriptCompiler.js` on Windows. Find the exact path with `npx --yes @rocket.chat/apps-cli --version` and checking npm's npx cache directory.
-
-_-J. F. Gaulter 2023-12-31_  
-_-BearlyBelievable 2026-08-06 (updated version numbers, line number, and root cause)_
-
+For installation, configuration, testing, and troubleshooting instructions, see the [wiki](https://github.com/c4osl/rocketchatcsam/wiki).
 
 Acknowledgements
 ================
-This app was originally developed under Prostasia Foundation, which has since ceased operations. This project continues to be funded by the [Center for Online Safety and Liberty (COSL)](https://c4osl.org/), which also funded Prostasia. If you'd like to support COSL's work, see their [Support Us](https://c4osl.org/support-us/) page.
+This app was originally developed under Prostasia Foundation, which has since ceased operations. This project continues to be supported by the [Center for Online Safety and Liberty (COSL)](https://c4osl.org/), which also funded Prostasia. If you'd like to support COSL's work, see their [Support Us](https://c4osl.org/support-us/) page.
 
 Changelog
 =========
@@ -147,4 +37,17 @@ Changelog
 * 0.3.4
   * Modernized tooling: updated @types/node and typescript to current versions, migrated linting from tslint to eslint
   * Upgraded @rocket.chat/apps-engine from ^1.19.0 to ^1.64.1, resolving all npm audit vulnerabilities
-  * Restructured source files into config/ and lib/ folders; no behavior changes
+  * Restructured source files into config/ and lib/ folders. No behavior changes
+* 0.4.0
+  * Added a unit test suite and a live-API integration test
+  * Added `/photodna-test-connection` slash command to verify the API key and connectivity from within Rocket.Chat
+  * Fixed matched image bytes being written into application logs
+  * Fixed fail-open behavior when PhotoDNA API calls fail or return an unusable response
+  * Fixed only the first message attachment being scanned
+  * Fixed unsupported image formats being treated as a special warned-about case instead of ordinary filtering
+  * Fixed the NCMEC test-mode setting being a no-op
+  * Fixed the upload ID being derived by parsing the attachment URL instead of using its `fileId`
+  * Fixed the quarantine channel being resolved by name on every match, which broke on rename
+  * Added error handling around the PhotoDNA and NCMEC API calls
+  * Added automated CI via GitHub Actions
+  * Moved installation, configuration, testing, and troubleshooting docs to the wiki
