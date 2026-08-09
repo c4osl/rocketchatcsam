@@ -20,5 +20,6 @@
     "CSEM_NCMEC_User_Label": "NCMEC Cybertip API Username",
     "CSEM_NCMEC_User_Description": "The username used for the NCMEC cybertip API",
     "CSEM_NCMEC_Password_Label": "NCMEC Cybertip API Password",
-    "CSEM_NCMEC_Password_Description": "The password used for the NCMEC cybertip API"
+    "CSEM_NCMEC_Password_Description": "The password used for the NCMEC cybertip API",
+    "CSEM_Test_Connection_Command_Description": "Verify the configured PhotoDNA API key and connectivity (admins only)"
 }

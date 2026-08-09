@@ -1,4 +1,7 @@
 import { IImageData } from './IImageData';
+import { IMatchOperationStatus } from './IMatchOperationStatus';
+import { IMatchDetails } from './IMatchDetails';
+import { IEvaluateResponse } from './IEvaluateResponse';
 
 export interface IMatchResult {
     Status: IMatchOperationStatus;
@@ -6,25 +9,6 @@ export interface IMatchResult {
     ContentId?: string;
     IsMatch?: boolean;
     MatchDetails?: IMatchDetails;
+    EvaluateResponse?: IEvaluateResponse | null;
     ImageData?: IImageData;
-}
-
-export interface IMatchOperationStatus {
-    Code: number;
-    Description: string;
-}
-
-export interface IMatchDetails {
-    MatchFlags: Array<IMatchFlag>;
-}
-
-export interface IMatchFlag {
-    AdvancedInfo?: Array<IAdvancedInfo>;
-    Source?: string;
-    Violations?: Array<string>;
-}
-
-export interface IAdvancedInfo {
-    Key: string;
-    Value: string;
 }
