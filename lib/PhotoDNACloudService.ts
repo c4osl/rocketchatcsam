@@ -1,4 +1,5 @@
 import { IHttp, ILogger, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IAttachmentOutcome } from './IAttachmentOutcome';
 import { IImageData } from './IImageData';
 import { IMatchResult } from './IMatchResult';
 import { MatchOutcome } from './MatchOutcome';
@@ -35,23 +36,32 @@ export class PhotoDNACloudService {
 
     /**
      * Matches every scannable image attachment on the message against the PhotoDNA service,
-     * one at a time, returning one outcome per attachment. Before executing this method, be
-     * sure to call preMatchMessage
+     * one at a time, returning one outcome per attachment paired with that attachment's
+     * original index, so callers can act on the specific attachment(s) a result applies to.
+     * Before executing this method, be sure to call preMatchMessage
      * @param message
      * @param logger
      * @param read
      * @param http
      */
-    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<Array<MatchOutcome>> {
-        const imageAttachments = (message.attachments as Array<any> ?? []).filter((attachment) => this.isScannableImageAttachment(attachment));
+    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<Array<IAttachmentOutcome>> {
+        const attachments = (message.attachments as Array<any>) ?? [];
 
-        const outcomes: Array<MatchOutcome> = [];
-        for (const imageAttachment of imageAttachments) {
+        const results: Array<IAttachmentOutcome> = [];
+        for (let attachmentIndex = 0; attachmentIndex < attachments.length; attachmentIndex++) {
+            const imageAttachment = attachments[attachmentIndex];
+            if (!this.isScannableImageAttachment(imageAttachment)) {
+                continue;
+            }
+
             const imageMimeType = imageAttachment.imageType;
             const imageFileName = imageAttachment.title.value;
             const imageBuffer = await read.getUploadReader().getBufferById(imageAttachment.fileId)
             if (!imageBuffer) {
-                outcomes.push({ verified: false, reason: `Could not load the image buffer for attachment "${imageFileName}".` });
+                results.push({
+                    attachmentIndex,
+                    outcome: { verified: false, reason: `Could not load the image buffer for attachment "${imageFileName}".` },
+                });
                 continue;
             }
 
@@ -61,9 +71,9 @@ export class PhotoDNACloudService {
                 data: imageBuffer
             }, logger);
             logger.debug(`Performed match operation on ${imageFileName}. verified: ${outcome.verified}.`);
-            outcomes.push(outcome);
+            results.push({ attachmentIndex, outcome });
         }
-        return outcomes;
+        return results;
     }
 
     /**

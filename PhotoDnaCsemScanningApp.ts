@@ -98,23 +98,28 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
         persistence: IPersistence,
     ): Promise<IMessage> {
         const logger = this.getLogger();
-        const outcomes = await this.photoDnaService.matchMessage(message, logger, read, http);
+        const attachmentOutcomes = await this.photoDnaService.matchMessage(message, logger, read, http);
 
         const matchedResults: Array<IMatchResult> = [];
+        const matchedAttachmentIndexes: Array<number> = [];
         const unverifiedReasons: Array<string> = [];
-        for (const outcome of outcomes) {
+        const unverifiedAttachmentIndexes: Array<number> = [];
+        for (const { attachmentIndex, outcome } of attachmentOutcomes) {
             if (outcome.verified) {
                 if (outcome.result.IsMatch) {
                     matchedResults.push(outcome.result);
+                    matchedAttachmentIndexes.push(attachmentIndex);
                 }
             } else {
                 unverifiedReasons.push(outcome.reason);
+                unverifiedAttachmentIndexes.push(attachmentIndex);
             }
         }
 
         if (matchedResults.length > 0) {
             await handleMatchingMessage(
                 matchedResults,
+                matchedAttachmentIndexes,
                 message,
                 read,
                 persistence,
@@ -126,7 +131,7 @@ export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModif
                 this.photoDnaService,
             );
         } else if (unverifiedReasons.length > 0) {
-            await handleIndeterminateResult(unverifiedReasons.join(' | '), message, read, builder, logger, this.quarantineRoomId);
+            await handleIndeterminateResult(unverifiedReasons.join(' | '), unverifiedAttachmentIndexes, message, read, builder, logger, this.quarantineRoomId);
         }
         return builder.getMessage();
     }

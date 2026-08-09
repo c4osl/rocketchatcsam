@@ -7,6 +7,7 @@ import { moveToQuarantine } from './moveToQuarantine';
  * determination for it, rather than letting it pass through as if it were a confirmed
  * non-match. Does not file an NCMEC report, since the image is not a confirmed match.
  * @param reason
+ * @param attachmentIndexes
  * @param message
  * @param read
  * @param builder
@@ -15,6 +16,7 @@ import { moveToQuarantine } from './moveToQuarantine';
  */
 export async function handleIndeterminateResult(
     reason: string,
+    attachmentIndexes: Array<number>,
     message: IMessage,
     read: IRead,
     builder: IMessageBuilder,
@@ -31,5 +33,5 @@ export async function handleIndeterminateResult(
     const notice = `PhotoDNA verification failed (${reason}). Routed for manual review, not a confirmed match.`;
     builder.setText(`${notice}\n\n${builder.getText()}`);
 
-    await moveToQuarantine(read, builder, logger, quarantineRoomId);
+    await moveToQuarantine(read, builder, logger, quarantineRoomId, attachmentIndexes);
 }

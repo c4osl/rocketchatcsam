@@ -3,17 +3,24 @@ import { ILogger, IMessageBuilder, IRead } from '@rocket.chat/apps-engine/defini
 /**
  * Moves a message to the quarantine room identified by quarantineRoomId (see
  * resolveQuarantineRoomId). If no quarantine room is configured/resolved, or the room has
- * since been deleted, removes the image attachment instead so at least the flagged image
- * doesn't get delivered.
+ * since been deleted, removes the specific attachment(s) at attachmentIndexes instead, so at
+ * least the flagged image(s) don't get delivered.
  * @param read
  * @param builder
  * @param logger
  * @param quarantineRoomId
+ * @param attachmentIndexes
  */
-export async function moveToQuarantine(read: IRead, builder: IMessageBuilder, logger: ILogger, quarantineRoomId: string | undefined): Promise<void> {
+export async function moveToQuarantine(
+    read: IRead,
+    builder: IMessageBuilder,
+    logger: ILogger,
+    quarantineRoomId: string | undefined,
+    attachmentIndexes: Array<number>,
+): Promise<void> {
     if (!quarantineRoomId) {
-        logger.warn('No usable quarantine channel is configured; removing the flagged attachment instead.');
-        builder.removeAttachment(0);
+        logger.warn('No usable quarantine channel is configured; removing the flagged attachment(s) instead.');
+        removeAttachments(builder, attachmentIndexes);
         return;
     }
 
@@ -24,8 +31,21 @@ export async function moveToQuarantine(read: IRead, builder: IMessageBuilder, lo
         builder.setRoom(targetRoom);
     } else {
         logger.error(
-            `Configured quarantine room (id: ${quarantineRoomId}) could not be found, it may have been deleted. Removing the flagged attachment instead.`,
+            `Configured quarantine room (id: ${quarantineRoomId}) could not be found, it may have been deleted. Removing the flagged attachment(s) instead.`,
         );
-        builder.removeAttachment(0);
+        removeAttachments(builder, attachmentIndexes);
+    }
+}
+
+/**
+ * Removes attachments by index from highest to lowest, so removing one doesn't shift the
+ * position of ones not yet removed.
+ * @param builder
+ * @param attachmentIndexes
+ */
+function removeAttachments(builder: IMessageBuilder, attachmentIndexes: Array<number>): void {
+    const descending = [...attachmentIndexes].sort((a, b) => b - a);
+    for (const index of descending) {
+        builder.removeAttachment(index);
     }
 }

@@ -8,6 +8,7 @@ import { PhotoDNACloudService } from './PhotoDNACloudService';
  * Quarantines a message that matched the PhotoDNA service, and files a single NCMEC
  * report covering every matched attachment, if enabled.
  * @param matchResults
+ * @param matchedAttachmentIndexes
  * @param message
  * @param read
  * @param persistence
@@ -20,6 +21,7 @@ import { PhotoDNACloudService } from './PhotoDNACloudService';
  */
 export async function handleMatchingMessage(
     matchResults: Array<IMatchResult>,
+    matchedAttachmentIndexes: Array<number>,
     message: IMessage,
     read: IRead,
     persistence: IPersistence,
@@ -42,7 +44,7 @@ export async function handleMatchingMessage(
         );
     }
 
-    await moveToQuarantine(read, builder, logger, quarantineRoomId);
+    await moveToQuarantine(read, builder, logger, quarantineRoomId, matchedAttachmentIndexes);
 
     if (enableAutomatedReport) {
         await photoDnaService.performReportOperation(matchResults, http, message, read, logger);

@@ -133,11 +133,12 @@ test('matchMessage sends the image buffer to PhotoDNA and parses a match respons
     assert.equal(sentBody.Value, imageBuffer.toString('base64'));
 
     assert.equal(outcomes.length, 1);
-    assert.equal(outcomes[0].verified, true);
-    assert.ok(outcomes[0].verified);
-    assert.equal(outcomes[0].result.IsMatch, true);
-    assert.equal(outcomes[0].result.TrackingId, 'test-tracking-id');
-    assert.equal(outcomes[0].result.ImageData?.filename, 'img_130.jpg');
+    assert.equal(outcomes[0].attachmentIndex, 0);
+    assert.equal(outcomes[0].outcome.verified, true);
+    assert.ok(outcomes[0].outcome.verified);
+    assert.equal(outcomes[0].outcome.result.IsMatch, true);
+    assert.equal(outcomes[0].outcome.result.TrackingId, 'test-tracking-id');
+    assert.equal(outcomes[0].outcome.result.ImageData?.filename, 'img_130.jpg');
 });
 
 test('matchMessage scans every image attachment, not just the first', async () => {
@@ -180,12 +181,14 @@ test('matchMessage scans every image attachment, not just the first', async () =
 
     assert.equal(callCount, 2, 'both attachments should have been sent to PhotoDNA, not just the first');
     assert.equal(outcomes.length, 2);
-    assert.equal(outcomes[0].verified, true);
-    assert.ok(outcomes[0].verified);
-    assert.equal(outcomes[0].result.IsMatch, false);
-    assert.equal(outcomes[1].verified, true);
-    assert.ok(outcomes[1].verified);
-    assert.equal(outcomes[1].result.IsMatch, true);
+    assert.equal(outcomes[0].attachmentIndex, 0);
+    assert.equal(outcomes[0].outcome.verified, true);
+    assert.ok(outcomes[0].outcome.verified);
+    assert.equal(outcomes[0].outcome.result.IsMatch, false);
+    assert.equal(outcomes[1].attachmentIndex, 1);
+    assert.equal(outcomes[1].outcome.verified, true);
+    assert.ok(outcomes[1].outcome.verified);
+    assert.equal(outcomes[1].outcome.result.IsMatch, true);
 });
 
 test('matchMessage skips non-image and unsupported attachments while still scanning the rest', async () => {
@@ -223,7 +226,10 @@ test('matchMessage skips non-image and unsupported attachments while still scann
     const outcomes = await service.matchMessage(message, makeLogger(), read, http);
 
     assert.equal(outcomes.length, 1);
-    assert.equal(outcomes[0].verified, true);
+    // the scanned attachment is the third in the list (index 2); pins that skipped
+    // attachments don't throw off the index used to identify which one this outcome is for
+    assert.equal(outcomes[0].attachmentIndex, 2);
+    assert.equal(outcomes[0].outcome.verified, true);
 });
 
 test('matchMessage reports an indeterminate outcome when the image buffer cannot be loaded', async () => {
@@ -250,9 +256,10 @@ test('matchMessage reports an indeterminate outcome when the image buffer cannot
     const outcomes = await service.matchMessage(message, makeLogger(), read, http);
 
     assert.equal(outcomes.length, 1);
-    assert.equal(outcomes[0].verified, false);
-    assert.ok(!outcomes[0].verified);
-    assert.match(outcomes[0].reason, /image buffer/i);
+    assert.equal(outcomes[0].attachmentIndex, 0);
+    assert.equal(outcomes[0].outcome.verified, false);
+    assert.ok(!outcomes[0].outcome.verified);
+    assert.match(outcomes[0].outcome.reason, /image buffer/i);
 });
 
 test('checkConnection parses a successful response from the API', async () => {
