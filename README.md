@@ -54,3 +54,9 @@ Changelog
     - Added error handling around the PhotoDNA and NCMEC API calls
     - Added automated CI via GitHub Actions
     - Moved installation, configuration, testing, and troubleshooting docs to the wiki
+- 0.4.1
+    - Fixed `rc-apps package`/`deploy` failing due to a bug in `@rocket.chat/apps-compiler`
+    - Fixed `requiredApiVersion` drifting to a stricter minimum than the app needs
+    - Renamed the app to PhotoDNA Scanning App
+    - Updated stale author info
+    - Adopted Prettier for code formatting
