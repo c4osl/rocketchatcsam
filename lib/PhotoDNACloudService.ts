@@ -6,7 +6,18 @@ import {
 import {IImageData, IMatchResult} from "./IMatchResult";
 import {IAttachmentOutcome} from "./IAttachmentOutcome";
 import {MatchOutcome} from "./MatchOutcome";
-import {IMessage} from "@rocket.chat/apps-engine/definition/messages";
+import {
+    IMessage,
+    IMessageAttachment,
+} from "@rocket.chat/apps-engine/definition/messages";
+
+/**
+ * Rocket.Chat's runtime attaches an `imageType` (mime type) to image attachments,
+ * but it isn't part of apps-engine's own IMessageAttachment type.
+ */
+interface IScannableAttachment extends IMessageAttachment {
+    imageType?: string;
+}
 import {
     SETTING_PHOTODNA_API_KEY,
     SETTING_NCMEC_USER,
@@ -39,9 +50,9 @@ export class PhotoDNACloudService {
             return false;
         }
 
-        const hasScannableImage = (message.attachments as Array<any>).some(
-            (attachment) => this.isScannableImageAttachment(attachment),
-        );
+        const hasScannableImage = (
+            message.attachments as Array<IScannableAttachment>
+        ).some((attachment) => this.isScannableImageAttachment(attachment));
         if (!hasScannableImage) {
             return false;
         }
@@ -63,7 +74,8 @@ export class PhotoDNACloudService {
         read: IRead,
         http: IHttp,
     ): Promise<Array<IAttachmentOutcome>> {
-        const attachments = (message.attachments as Array<any>) ?? [];
+        const attachments =
+            (message.attachments as Array<IScannableAttachment>) ?? [];
 
         const results: Array<IAttachmentOutcome> = [];
         for (
@@ -352,11 +364,16 @@ export class PhotoDNACloudService {
      * file to load; an attachment could have an imageUrl without being a local upload at all
      * (e.g. a hotlinked external image), which we have no buffer to scan either way.
      */
-    private isScannableImageAttachment(attachment: any): boolean {
+    private isScannableImageAttachment(
+        attachment: IScannableAttachment,
+    ): attachment is IScannableAttachment & {
+        fileId: string;
+        imageType: string;
+    } {
         return (
             Boolean(attachment.imageUrl) &&
             Boolean(attachment.fileId) &&
-            this.isSupportedImageMimeType(attachment.imageType)
+            this.isSupportedImageMimeType(attachment.imageType ?? "")
         );
     }
 }
