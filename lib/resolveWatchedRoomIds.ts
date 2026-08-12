@@ -3,9 +3,6 @@ import {ILogger, IRead} from "@rocket.chat/apps-engine/definition/accessors";
 /**
  * Resolves the configured comma-separated list of room names into the set of room IDs to watch.
  * Returns undefined when no room names are configured, meaning every room should be watched.
- * @param limitRoomNamesCsv
- * @param read
- * @param logger
  */
 export async function resolveWatchedRoomIds(
     limitRoomNamesCsv: string,

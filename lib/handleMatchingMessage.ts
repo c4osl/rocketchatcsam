@@ -12,16 +12,6 @@ import {PhotoDNACloudService} from "./PhotoDNACloudService";
 /**
  * Quarantines a message that matched the PhotoDNA service, and files a single NCMEC
  * report covering every matched attachment, if enabled.
- * @param matchResults
- * @param matchedAttachmentIndexes
- * @param message
- * @param read
- * @param builder
- * @param http
- * @param logger
- * @param quarantineRoomId
- * @param enableAutomatedReport
- * @param photoDnaService
  */
 export async function handleMatchingMessage(
     matchResults: Array<IMatchResult>,

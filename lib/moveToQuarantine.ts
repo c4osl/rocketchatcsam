@@ -9,11 +9,6 @@ import {
  * resolveQuarantineRoomId). If no quarantine room is configured/resolved, or the room has
  * since been deleted, removes the specific attachment(s) at attachmentIndexes instead, so at
  * least the flagged image(s) don't get delivered.
- * @param read
- * @param builder
- * @param logger
- * @param quarantineRoomId
- * @param attachmentIndexes
  */
 export async function moveToQuarantine(
     read: IRead,
@@ -32,8 +27,7 @@ export async function moveToQuarantine(
 
     const targetRoom = await read.getRoomReader().getById(quarantineRoomId);
     if (targetRoom) {
-        // we have a target room - move it to this room
-        // the original user uploading currently does not get notified
+        // The original user uploading currently does not get notified.
         builder.setRoom(targetRoom);
     } else {
         logger.error(
@@ -46,8 +40,6 @@ export async function moveToQuarantine(
 /**
  * Removes attachments by index from highest to lowest, so removing one doesn't shift the
  * position of ones not yet removed.
- * @param builder
- * @param attachmentIndexes
  */
 function removeAttachments(
     builder: IMessageBuilder,

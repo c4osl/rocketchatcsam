@@ -10,13 +10,6 @@ import {moveToQuarantine} from "./moveToQuarantine";
  * Routes a message for manual review when PhotoDNA could not produce a usable match
  * determination for it, rather than letting it pass through as if it were a confirmed
  * non-match. Does not file an NCMEC report, since the image is not a confirmed match.
- * @param reason
- * @param attachmentIndexes
- * @param message
- * @param read
- * @param builder
- * @param logger
- * @param quarantineRoomId
  */
 export async function handleIndeterminateResult(
     reason: string,

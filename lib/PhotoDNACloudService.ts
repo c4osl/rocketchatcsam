@@ -3,9 +3,8 @@ import {
     ILogger,
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
+import {IImageData, IMatchResult} from "./IMatchResult";
 import {IAttachmentOutcome} from "./IAttachmentOutcome";
-import {IImageData} from "./IImageData";
-import {IMatchResult} from "./IMatchResult";
 import {MatchOutcome} from "./MatchOutcome";
 import {IMessage} from "@rocket.chat/apps-engine/definition/messages";
 import {
@@ -31,8 +30,6 @@ export class PhotoDNACloudService {
     /**
      * Determine whether matchMessage is to be executed, which is the case if this message
      * contains at least one image we can handle
-     * @param message
-     * @param logger
      */
     public async preMatchMessage(
         message: IMessage,
@@ -59,10 +56,6 @@ export class PhotoDNACloudService {
      * one at a time, returning one outcome per attachment paired with that attachment's
      * original index, so callers can act on the specific attachment(s) a result applies to.
      * Before executing this method, be sure to call preMatchMessage
-     * @param message
-     * @param logger
-     * @param read
-     * @param http
      */
     public async matchMessage(
         message: IMessage,
@@ -124,10 +117,6 @@ export class PhotoDNACloudService {
     /**
      * Performs a match operation against a small sample image, to verify the configured
      * API key and network connectivity without needing a real message attachment.
-     * @param http
-     * @param read
-     * @param logger
-     * @param testImageBuffer
      */
     public async checkConnection(
         http: IHttp,
@@ -148,10 +137,6 @@ export class PhotoDNACloudService {
     }
 
     /**
-     * Perform the match operation as defined by the PhotoDNA cloud service api
-     * @param http
-     * @param read
-     * @param imageData
      * @see https://developer.microsoftmoderator.com/docs/services/57c7426e2703740ec4c9f4c3/operations/57c7426f27037407c8cc69e6
      */
     private async performMatchOperation(
@@ -235,11 +220,6 @@ export class PhotoDNACloudService {
      * Report one or more content violations from the same message to NCMEC in a single report.
      * The message has already been quarantined by the time this runs, so a failure here means
      * the report itself needs manual follow-up, not that the match was wrong.
-     * @param matchResults
-     * @param http
-     * @param message
-     * @param read
-     * @param logger
      * @see https://developer.microsoftmoderator.com/docs/services/57c7426e2703740ec4c9f4c3/operations/57c77fdee3a97812ecf8bdeb
      */
     public async performReportOperation(
@@ -371,7 +351,6 @@ export class PhotoDNACloudService {
      * Requires fileId (not just imageUrl) since that's what identifies the actual uploaded
      * file to load; an attachment could have an imageUrl without being a local upload at all
      * (e.g. a hotlinked external image), which we have no buffer to scan either way.
-     * @param attachment
      */
     private isScannableImageAttachment(attachment: any): boolean {
         return (
