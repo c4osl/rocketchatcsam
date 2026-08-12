@@ -6,8 +6,6 @@
  */
 import {test} from "node:test";
 import {strict as assert} from "node:assert";
-import * as fs from "node:fs";
-import * as path from "node:path";
 import type {
     IHttp,
     IHttpRequest,
@@ -18,15 +16,10 @@ import type {
 import {RequestMethod} from "@rocket.chat/apps-engine/definition/accessors/IHttp";
 import type {IMessage} from "@rocket.chat/apps-engine/definition/messages";
 import {PhotoDNACloudService} from "../../lib/PhotoDNACloudService";
+import {getPhotoDnaTestImageBuffer} from "../../commands/photoDnaTestImage";
 
 const apiKey = process.env.PHOTODNA_API_KEY;
-const imagePath = path.join(
-    process.cwd(),
-    "tests",
-    "fixtures",
-    "SampleImages",
-    "img_130.jpg",
-);
+const testImageFileName = "img_130.jpg";
 
 function makeLogger(): ILogger {
     return {
@@ -111,8 +104,8 @@ test(
     },
     async () => {
         const service = new PhotoDNACloudService();
-        const imageBuffer = fs.readFileSync(imagePath);
-        const message = makeMessage(path.basename(imagePath));
+        const imageBuffer = getPhotoDnaTestImageBuffer();
+        const message = makeMessage(testImageFileName);
 
         const attachmentOutcomes = await service.matchMessage(
             message,

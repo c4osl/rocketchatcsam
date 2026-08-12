@@ -12,9 +12,6 @@ out/
 # Visual Studio Code
 .vscode/
 
-# Rocket.Chat development
-.rcappsconfig
-
 # environment variables (e.g. PHOTODNA_API_KEY for the integration test)
 .env
 .env.*
