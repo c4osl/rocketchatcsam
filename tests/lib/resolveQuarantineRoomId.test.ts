@@ -37,10 +37,10 @@ test('resolves the configured channel name to its room id', async () => {
     const targetRoom = { id: 'quarantine-room-id' } as IRoom;
     const { read, getByNameCalls } = makeRead(targetRoom);
 
-    const roomId = await resolveQuarantineRoomId('csem-quarantine', read, logger);
+    const roomId = await resolveQuarantineRoomId('photodna-quarantine', read, logger);
 
     assert.equal(roomId, 'quarantine-room-id');
-    assert.deepEqual(getByNameCalls, ['csem-quarantine']);
+    assert.deepEqual(getByNameCalls, ['photodna-quarantine']);
 });
 
 test('lowercases the configured channel name before looking it up, matching resolveWatchedRoomIds', async () => {
@@ -48,10 +48,10 @@ test('lowercases the configured channel name before looking it up, matching reso
     const targetRoom = { id: 'quarantine-room-id' } as IRoom;
     const { read, getByNameCalls } = makeRead(targetRoom);
 
-    const roomId = await resolveQuarantineRoomId('CSEM-Quarantine', read, logger);
+    const roomId = await resolveQuarantineRoomId('PhotoDNA-Quarantine', read, logger);
 
     assert.equal(roomId, 'quarantine-room-id');
-    assert.deepEqual(getByNameCalls, ['csem-quarantine']);
+    assert.deepEqual(getByNameCalls, ['photodna-quarantine']);
 });
 
 test('logs at error severity and returns undefined when the configured channel does not exist', async () => {

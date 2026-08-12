@@ -24,7 +24,7 @@ export async function handleIndeterminateResult(
     quarantineRoomId: string | undefined,
 ): Promise<void> {
     logger.error(
-        'CSEM-VERIFICATION-FAILED',
+        'PHOTODNA-VERIFICATION-FAILED',
         `message ID: ${message.id}`,
         message.sender,
         reason,

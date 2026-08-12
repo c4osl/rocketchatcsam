@@ -1,5 +1,5 @@
-Rocket.Chat PhotoDNA CSEM-Scanning App
-=======================================
+Rocket.Chat PhotoDNA Scanning App
+=================================
 
 [![CI](https://github.com/c4osl/rocketchatcsam/actions/workflows/ci.yml/badge.svg)](https://github.com/c4osl/rocketchatcsam/actions/workflows/ci.yml)
 [![ESLint](https://img.shields.io/badge/lint-eslint-4B32C3?logo=eslint&logoColor=white)](eslint.config.js)

@@ -32,7 +32,7 @@ const ROOM_TYPES = Object.freeze({
     livechat: 'l',
 });
 
-export class PhotoDnaCsemScanningApp extends App implements IPreMessageSentModify {
+export class PhotoDnaScanningApp extends App implements IPreMessageSentModify {
 
     private photoDnaService: PhotoDNACloudService;
 

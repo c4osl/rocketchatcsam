@@ -20,7 +20,7 @@ export class PhotoDnaTestConnectionCommand implements ISlashCommand {
 
     public command = 'photodna-test-connection';
     public i18nParamsExample = '';
-    public i18nDescription = 'CSEM_Test_Connection_Command_Description';
+    public i18nDescription = 'PhotoDNA_Test_Connection_Command_Description';
     public providesPreview = false;
 
     private readonly photoDnaService = new PhotoDNACloudService();

@@ -103,7 +103,7 @@ test('logs every matched attachment when a message has more than one', async () 
         new PhotoDNACloudService(),
     );
 
-    const matchLogs = warnCalls.filter((call) => call[0] === 'CSEM-MATCH');
+    const matchLogs = warnCalls.filter((call) => call[0] === 'PHOTODNA-MATCH');
     assert.equal(matchLogs.length, 2);
 });
 

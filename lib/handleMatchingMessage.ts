@@ -34,7 +34,7 @@ export async function handleMatchingMessage(
         const matchResultForLog: Record<string, unknown> = { ...matchResult };
         delete matchResultForLog['ImageData'];
         logger.warn(
-            'CSEM-MATCH',
+            'PHOTODNA-MATCH',
             `enable automated report: ${enableAutomatedReport}`,
             `message ID: ${message.id}`,
             message.sender,

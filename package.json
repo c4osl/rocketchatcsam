@@ -1,5 +1,5 @@
 {
-    "name": "photodna-csem-scanning",
+    "name": "photodna-scanning",
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
