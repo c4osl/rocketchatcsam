@@ -1,4 +1,4 @@
-import { IAdvancedInfo } from './IAdvancedInfo';
+import {IAdvancedInfo} from "./IAdvancedInfo";
 
 export interface IMatchFlag {
     AdvancedInfo?: Array<IAdvancedInfo>;

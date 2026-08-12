@@ -12,7 +12,5 @@
     "nameSlug": "photodna-scanning",
     "classFile": "PhotoDnaScanningApp.ts",
     "description": "Validate uploaded images against the Microsoft PhotoDNA Cloud Service",
-    "implements": [
-        "IPreMessageSentModify"
-    ]
+    "implements": ["IPreMessageSentModify"]
 }

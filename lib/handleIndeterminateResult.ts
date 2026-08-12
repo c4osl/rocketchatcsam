@@ -1,6 +1,10 @@
-import { ILogger, IMessageBuilder, IRead } from '@rocket.chat/apps-engine/definition/accessors';
-import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
-import { moveToQuarantine } from './moveToQuarantine';
+import {
+    ILogger,
+    IMessageBuilder,
+    IRead,
+} from "@rocket.chat/apps-engine/definition/accessors";
+import {IMessage} from "@rocket.chat/apps-engine/definition/messages";
+import {moveToQuarantine} from "./moveToQuarantine";
 
 /**
  * Routes a message for manual review when PhotoDNA could not produce a usable match
@@ -24,7 +28,7 @@ export async function handleIndeterminateResult(
     quarantineRoomId: string | undefined,
 ): Promise<void> {
     logger.error(
-        'PHOTODNA-VERIFICATION-FAILED',
+        "PHOTODNA-VERIFICATION-FAILED",
         `message ID: ${message.id}`,
         message.sender,
         reason,
@@ -33,5 +37,11 @@ export async function handleIndeterminateResult(
     const notice = `PhotoDNA verification failed (${reason}). Routed for manual review, not a confirmed match.`;
     builder.setText(`${notice}\n\n${builder.getText()}`);
 
-    await moveToQuarantine(read, builder, logger, quarantineRoomId, attachmentIndexes);
+    await moveToQuarantine(
+        read,
+        builder,
+        logger,
+        quarantineRoomId,
+        attachmentIndexes,
+    );
 }

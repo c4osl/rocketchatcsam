@@ -1,8 +1,13 @@
-import { IHttp, ILogger, IMessageBuilder, IRead } from '@rocket.chat/apps-engine/definition/accessors';
-import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
-import { IMatchResult } from './IMatchResult';
-import { moveToQuarantine } from './moveToQuarantine';
-import { PhotoDNACloudService } from './PhotoDNACloudService';
+import {
+    IHttp,
+    ILogger,
+    IMessageBuilder,
+    IRead,
+} from "@rocket.chat/apps-engine/definition/accessors";
+import {IMessage} from "@rocket.chat/apps-engine/definition/messages";
+import {IMatchResult} from "./IMatchResult";
+import {moveToQuarantine} from "./moveToQuarantine";
+import {PhotoDNACloudService} from "./PhotoDNACloudService";
 
 /**
  * Quarantines a message that matched the PhotoDNA service, and files a single NCMEC
@@ -31,10 +36,10 @@ export async function handleMatchingMessage(
     photoDnaService: PhotoDNACloudService,
 ): Promise<void> {
     for (const matchResult of matchResults) {
-        const matchResultForLog: Record<string, unknown> = { ...matchResult };
-        delete matchResultForLog['ImageData'];
+        const matchResultForLog: Record<string, unknown> = {...matchResult};
+        delete matchResultForLog["ImageData"];
         logger.warn(
-            'PHOTODNA-MATCH',
+            "PHOTODNA-MATCH",
             `enable automated report: ${enableAutomatedReport}`,
             `message ID: ${message.id}`,
             message.sender,
@@ -42,9 +47,21 @@ export async function handleMatchingMessage(
         );
     }
 
-    await moveToQuarantine(read, builder, logger, quarantineRoomId, matchedAttachmentIndexes);
+    await moveToQuarantine(
+        read,
+        builder,
+        logger,
+        quarantineRoomId,
+        matchedAttachmentIndexes,
+    );
 
     if (enableAutomatedReport) {
-        await photoDnaService.performReportOperation(matchResults, http, message, read, logger);
+        await photoDnaService.performReportOperation(
+            matchResults,
+            http,
+            message,
+            read,
+            logger,
+        );
     }
 }

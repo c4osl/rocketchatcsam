@@ -3,10 +3,12 @@
     "scripts": {
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
         "typecheck": "tsc --noEmit",
         "unit-test": "tsx --test tests/config/**/*.test.ts tests/lib/**/*.test.ts tests/commands/**/*.test.ts",
         "integration-test": "tsx --test tests/integration/**/*.test.ts",
-        "test": "npm run typecheck && npm run lint && npm run unit-test",
+        "test": "npm run typecheck && npm run lint && npm run format:check && npm run unit-test",
         "package": "rc-apps package --experimental-native-compiler",
         "deploy": "rc-apps deploy --experimental-native-compiler",
         "postinstall": "patch-package"
@@ -18,7 +20,9 @@
         "@rocket.chat/ui-kit": "~1.1.0",
         "@types/node": "^22.10.0",
         "eslint": "^9.15.0",
+        "eslint-config-prettier": "^10.1.8",
         "patch-package": "^8.0.1",
+        "prettier": "^3.9.6",
         "tsx": "^4.23.7",
         "typescript": "^5.6.0",
         "typescript-eslint": "^8.15.0"
