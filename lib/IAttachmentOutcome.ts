@@ -1,4 +1,4 @@
-import { MatchOutcome } from './MatchOutcome';
+import {MatchOutcome} from "./MatchOutcome";
 
 /**
  * A MatchOutcome paired with the index of the message attachment it came from, so callers

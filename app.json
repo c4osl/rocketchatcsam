@@ -1,18 +1,16 @@
 {
     "id": "553209bf-81fc-4210-bebc-8943b40e8fea",
-    "version": "0.4.0",
-    "requiredApiVersion": "^1.64.1",
+    "version": "0.4.1",
+    "requiredApiVersion": "^1.19.0",
     "iconFile": "icon.png",
     "author": {
-        "name": "Jeremy Malcolm / Marco Descher",
-        "homepage": "https://prostasia.org",
+        "name": "Center for Online Safety and Liberty",
+        "homepage": "https://c4osl.org",
         "support": "n/a"
     },
-    "name": "PhotoDNA CSEM-scanning",
-    "nameSlug": "photodna-csem-scanning",
-    "classFile": "PhotoDnaCsemScanningApp.ts",
-    "description": "Validate uploaded images against the Microsoft PhotoDNA CSEM (Child Sexual Exploitation Material) Cloud Service",
-    "implements": [
-        "IPreMessageSentModify"
-    ]
+    "name": "PhotoDNA Scanning App",
+    "nameSlug": "photodna-scanning",
+    "classFile": "PhotoDnaScanningApp.ts",
+    "description": "Validate uploaded images against the Microsoft PhotoDNA Cloud Service",
+    "implements": ["IPreMessageSentModify"]
 }

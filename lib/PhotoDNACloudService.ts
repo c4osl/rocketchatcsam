@@ -1,19 +1,32 @@
-import { IHttp, ILogger, IRead } from '@rocket.chat/apps-engine/definition/accessors';
-import { IAttachmentOutcome } from './IAttachmentOutcome';
-import { IImageData } from './IImageData';
-import { IMatchResult } from './IMatchResult';
-import { MatchOutcome } from './MatchOutcome';
-import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
-import { SETTING_PHOTODNA_API_KEY, SETTING_NCMEC_USER, SETTING_NCMEC_PASSWORD, SETTING_NCMEC_ORGNAME, SETTING_NCMEC_REPORTER_NAME, SETTING_NCMEC_REPORTER_EMAIL, SETTING_NCMEC_ENABLE_TEST_MODE } from '../config/Settings';
+import {
+    IHttp,
+    ILogger,
+    IRead,
+} from "@rocket.chat/apps-engine/definition/accessors";
+import {IAttachmentOutcome} from "./IAttachmentOutcome";
+import {IImageData} from "./IImageData";
+import {IMatchResult} from "./IMatchResult";
+import {MatchOutcome} from "./MatchOutcome";
+import {IMessage} from "@rocket.chat/apps-engine/definition/messages";
+import {
+    SETTING_PHOTODNA_API_KEY,
+    SETTING_NCMEC_USER,
+    SETTING_NCMEC_PASSWORD,
+    SETTING_NCMEC_ORGNAME,
+    SETTING_NCMEC_REPORTER_NAME,
+    SETTING_NCMEC_REPORTER_EMAIL,
+    SETTING_NCMEC_ENABLE_TEST_MODE,
+} from "../config/Settings";
 
 /**
  * Microsoft PhotoDNA cloud service
  * @see https://www.microsoft.com/en-us/photodna
  */
 export class PhotoDNACloudService {
-
-    private readonly Match_Post_Url = 'https://api.microsoftmoderator.com/photodna/v1.0/Match';
-    private readonly Report_Post_Url = 'https://api.microsoftmoderator.com/photodna/v1.0/Report';
+    private readonly Match_Post_Url =
+        "https://api.microsoftmoderator.com/photodna/v1.0/Match";
+    private readonly Report_Post_Url =
+        "https://api.microsoftmoderator.com/photodna/v1.0/Report";
 
     /**
      * Determine whether matchMessage is to be executed, which is the case if this message
@@ -21,16 +34,23 @@ export class PhotoDNACloudService {
      * @param message
      * @param logger
      */
-    public async preMatchMessage(message: IMessage, logger: ILogger): Promise<boolean> {
+    public async preMatchMessage(
+        message: IMessage,
+        logger: ILogger,
+    ): Promise<boolean> {
         if (!message.attachments) {
             return false;
         }
 
-        const hasScannableImage = (message.attachments as Array<any>).some((attachment) => this.isScannableImageAttachment(attachment));
+        const hasScannableImage = (message.attachments as Array<any>).some(
+            (attachment) => this.isScannableImageAttachment(attachment),
+        );
         if (!hasScannableImage) {
             return false;
         }
-        logger.debug(`Will attempt to match message from ${message.sender.name} in room #   ${message.room.id} at ${message.createdAt}.`);
+        logger.debug(
+            `Will attempt to match message from ${message.sender.name} in room #   ${message.room.id} at ${message.createdAt}.`,
+        );
         return true;
     }
 
@@ -44,11 +64,20 @@ export class PhotoDNACloudService {
      * @param read
      * @param http
      */
-    public async matchMessage(message: IMessage, logger: ILogger, read: IRead, http: IHttp): Promise<Array<IAttachmentOutcome>> {
+    public async matchMessage(
+        message: IMessage,
+        logger: ILogger,
+        read: IRead,
+        http: IHttp,
+    ): Promise<Array<IAttachmentOutcome>> {
         const attachments = (message.attachments as Array<any>) ?? [];
 
         const results: Array<IAttachmentOutcome> = [];
-        for (let attachmentIndex = 0; attachmentIndex < attachments.length; attachmentIndex++) {
+        for (
+            let attachmentIndex = 0;
+            attachmentIndex < attachments.length;
+            attachmentIndex++
+        ) {
             const imageAttachment = attachments[attachmentIndex];
             if (!this.isScannableImageAttachment(imageAttachment)) {
                 continue;
@@ -58,23 +87,36 @@ export class PhotoDNACloudService {
             // title is optional on IMessageAttachment. Ordinary uploads always set it, but
             // an attachment built some other way might not, so fall back to fileId rather
             // than crash the whole matchMessage call over one missing title
-            const imageFileName = imageAttachment.title?.value ?? imageAttachment.fileId;
-            const imageBuffer = await read.getUploadReader().getBufferById(imageAttachment.fileId)
+            const imageFileName =
+                imageAttachment.title?.value ?? imageAttachment.fileId;
+            const imageBuffer = await read
+                .getUploadReader()
+                .getBufferById(imageAttachment.fileId);
             if (!imageBuffer) {
                 results.push({
                     attachmentIndex,
-                    outcome: { verified: false, reason: `Could not load the image buffer for attachment "${imageFileName}".` },
+                    outcome: {
+                        verified: false,
+                        reason: `Could not load the image buffer for attachment "${imageFileName}".`,
+                    },
                 });
                 continue;
             }
 
-            const outcome = await this.performMatchOperation(http, read, {
-                contentType: imageMimeType,
-                filename: imageFileName,
-                data: imageBuffer
-            }, logger);
-            logger.debug(`Performed match operation on ${imageFileName}. verified: ${outcome.verified}.`);
-            results.push({ attachmentIndex, outcome });
+            const outcome = await this.performMatchOperation(
+                http,
+                read,
+                {
+                    contentType: imageMimeType,
+                    filename: imageFileName,
+                    data: imageBuffer,
+                },
+                logger,
+            );
+            logger.debug(
+                `Performed match operation on ${imageFileName}. verified: ${outcome.verified}.`,
+            );
+            results.push({attachmentIndex, outcome});
         }
         return results;
     }
@@ -87,12 +129,22 @@ export class PhotoDNACloudService {
      * @param logger
      * @param testImageBuffer
      */
-    public async checkConnection(http: IHttp, read: IRead, logger: ILogger, testImageBuffer: Buffer): Promise<MatchOutcome> {
-        return this.performMatchOperation(http, read, {
-            contentType: 'image/jpeg',
-            filename: 'photodna-connection-test.jpg',
-            data: testImageBuffer,
-        }, logger);
+    public async checkConnection(
+        http: IHttp,
+        read: IRead,
+        logger: ILogger,
+        testImageBuffer: Buffer,
+    ): Promise<MatchOutcome> {
+        return this.performMatchOperation(
+            http,
+            read,
+            {
+                contentType: "image/jpeg",
+                filename: "photodna-connection-test.jpg",
+                data: testImageBuffer,
+            },
+            logger,
+        );
     }
 
     /**
@@ -102,53 +154,81 @@ export class PhotoDNACloudService {
      * @param imageData
      * @see https://developer.microsoftmoderator.com/docs/services/57c7426e2703740ec4c9f4c3/operations/57c7426f27037407c8cc69e6
      */
-    private async performMatchOperation(http: IHttp, read: IRead, imageData: IImageData, logger: ILogger): Promise<MatchOutcome> {
-        const apiKey = await read.getEnvironmentReader().getSettings().getValueById(SETTING_PHOTODNA_API_KEY);
+    private async performMatchOperation(
+        http: IHttp,
+        read: IRead,
+        imageData: IImageData,
+        logger: ILogger,
+    ): Promise<MatchOutcome> {
+        const apiKey = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_PHOTODNA_API_KEY);
         if (!apiKey) {
-            return { verified: false, reason: 'The "API Subscription Key" setting is not configured.' };
+            return {
+                verified: false,
+                reason: 'The "API Subscription Key" setting is not configured.',
+            };
         }
 
         const content = JSON.stringify({
-            'DataRepresentation': 'inline',
-            'Value': imageData.data.toString('base64')
-        })
+            DataRepresentation: "inline",
+            Value: imageData.data.toString("base64"),
+        });
 
         let result;
         try {
             result = await http.post(this.Match_Post_Url, {
                 content,
                 params: {
-                    'enhance': 'false'
+                    enhance: "false",
                 },
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Ocp-Apim-Subscription-Key': apiKey
-                }
-            })
+                    "Content-Type": "application/json",
+                    "Ocp-Apim-Subscription-Key": apiKey,
+                },
+            });
         } catch (error) {
-            const detail = error instanceof Error ? error.message : String(error);
-            return { verified: false, reason: `A network error occurred while contacting the PhotoDNA API: ${detail}` };
+            const detail =
+                error instanceof Error ? error.message : String(error);
+            return {
+                verified: false,
+                reason: `A network error occurred while contacting the PhotoDNA API: ${detail}`,
+            };
         }
 
         if (!result) {
-            return { verified: false, reason: 'No response was received from the PhotoDNA API.' };
+            return {
+                verified: false,
+                reason: "No response was received from the PhotoDNA API.",
+            };
         }
 
         if (!result.data) {
-            return { verified: false, reason: 'The PhotoDNA API response did not include any data.' };
+            return {
+                verified: false,
+                reason: "The PhotoDNA API response did not include any data.",
+            };
         }
 
-        logger.debug('We received data back from the API:', result.data);
-        const data = result.data as Partial<IMatchResult> & { statusCode?: number; message?: string };
-        if (data.Status?.Code !== 3000 || typeof data.IsMatch !== 'boolean') {
-            const code = data.statusCode ?? data.Status?.Code ?? 'unknown';
-            const detail = data.message ?? data.Status?.Description ?? 'unknown error';
-            return { verified: false, reason: `PhotoDNA returned an unexpected response (code: ${code}): ${detail}` };
+        logger.debug("We received data back from the API:", result.data);
+        const data = result.data as Partial<IMatchResult> & {
+            statusCode?: number;
+            message?: string;
+        };
+        if (data.Status?.Code !== 3000 || typeof data.IsMatch !== "boolean") {
+            const code = data.statusCode ?? data.Status?.Code ?? "unknown";
+            const detail =
+                data.message ?? data.Status?.Description ?? "unknown error";
+            return {
+                verified: false,
+                reason: `PhotoDNA returned an unexpected response (code: ${code}): ${detail}`,
+            };
         }
 
         const matchResult = data as IMatchResult;
         matchResult.ImageData = imageData;
-        return { verified: true, result: matchResult };
+        return {verified: true, result: matchResult};
     }
 
     /**
@@ -162,43 +242,77 @@ export class PhotoDNACloudService {
      * @param logger
      * @see https://developer.microsoftmoderator.com/docs/services/57c7426e2703740ec4c9f4c3/operations/57c77fdee3a97812ecf8bdeb
      */
-    public async performReportOperation(matchResults: Array<IMatchResult>, http: IHttp, message: IMessage, read: IRead, logger: ILogger): Promise<void> {
-        const apiKey = await read.getEnvironmentReader().getSettings().getValueById(SETTING_PHOTODNA_API_KEY);
-        const ncmecUser = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_USER);
-        const ncmecPassword = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_PASSWORD);
-        const ncmecOrgName = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_ORGNAME);
-        const ncmecReporterName = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_REPORTER_NAME);
-        const ncmecReporterEmail = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_REPORTER_EMAIL);
-        const enableTestMode = await read.getEnvironmentReader().getSettings().getValueById(SETTING_NCMEC_ENABLE_TEST_MODE);
+    public async performReportOperation(
+        matchResults: Array<IMatchResult>,
+        http: IHttp,
+        message: IMessage,
+        read: IRead,
+        logger: ILogger,
+    ): Promise<void> {
+        const apiKey = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_PHOTODNA_API_KEY);
+        const ncmecUser = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_NCMEC_USER);
+        const ncmecPassword = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_NCMEC_PASSWORD);
+        const ncmecOrgName = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_NCMEC_ORGNAME);
+        const ncmecReporterName = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_NCMEC_REPORTER_NAME);
+        const ncmecReporterEmail = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_NCMEC_REPORTER_EMAIL);
+        const enableTestMode = await read
+            .getEnvironmentReader()
+            .getSettings()
+            .getValueById(SETTING_NCMEC_ENABLE_TEST_MODE);
 
         if (!apiKey || !ncmecUser || !ncmecPassword) {
             logger.error(
-                'NCMEC-REPORT-SKIPPED',
+                "NCMEC-REPORT-SKIPPED",
                 `message ID: ${message.id}`,
-                'Automated reporting is enabled but the NCMEC credentials are not fully configured.',
+                "Automated reporting is enabled but the NCMEC credentials are not fully configured.",
             );
             return;
         }
 
         const reportBody: Record<string, unknown> = {
-            'OrgName': ncmecOrgName,
-            'ReporterName': ncmecReporterName,
-            'ReporterEmail': ncmecReporterEmail,
-            'IncidentTime': (message.createdAt) ? message.createdAt.toISOString() : '',
-            'ReporteeName': message.sender.username,
-            'ReporteeIPAddress': '127.0.0.1',
-            'ViolationContentCollection': matchResults.map((matchResult) => ({
-                'Name': (matchResult.ImageData) ? matchResult.ImageData.filename : 'noFileName',
-                'Value': (matchResult.ImageData) ? matchResult.ImageData.data.toString('base64') : 'noImageData'
+            OrgName: ncmecOrgName,
+            ReporterName: ncmecReporterName,
+            ReporterEmail: ncmecReporterEmail,
+            IncidentTime: message.createdAt
+                ? message.createdAt.toISOString()
+                : "",
+            ReporteeName: message.sender.username,
+            ReporteeIPAddress: "127.0.0.1",
+            ViolationContentCollection: matchResults.map((matchResult) => ({
+                Name: matchResult.ImageData
+                    ? matchResult.ImageData.filename
+                    : "noFileName",
+                Value: matchResult.ImageData
+                    ? matchResult.ImageData.data.toString("base64")
+                    : "noImageData",
             })),
-            'AdditionalMetadata': [
+            AdditionalMetadata: [
                 {
-                    'Key': 'IsTest', 'Value': 'true'
-                }
-            ]
+                    Key: "IsTest",
+                    Value: "true",
+                },
+            ],
         };
         if (!enableTestMode) {
-            delete reportBody['AdditionalMetadata'];
+            delete reportBody["AdditionalMetadata"];
         }
         const content = JSON.stringify(reportBody);
 
@@ -207,36 +321,45 @@ export class PhotoDNACloudService {
             result = await http.post(this.Report_Post_Url, {
                 content,
                 headers: {
-                    'Ocp-Apim-Subscription-Key': apiKey,
-                    'x-usr': ncmecUser,
-                    'x-pwd': ncmecPassword
-                }
+                    "Ocp-Apim-Subscription-Key": apiKey,
+                    "x-usr": ncmecUser,
+                    "x-pwd": ncmecPassword,
+                },
             });
         } catch (error) {
-            const detail = error instanceof Error ? error.message : String(error);
-            logger.error('NCMEC-REPORT-FAILED', `message ID: ${message.id}`, `A network error occurred while filing the NCMEC report: ${detail}`);
+            const detail =
+                error instanceof Error ? error.message : String(error);
+            logger.error(
+                "NCMEC-REPORT-FAILED",
+                `message ID: ${message.id}`,
+                `A network error occurred while filing the NCMEC report: ${detail}`,
+            );
             return;
         }
 
         if (!result || !result.data) {
             logger.error(
-                'NCMEC-REPORT-FAILED',
+                "NCMEC-REPORT-FAILED",
                 `message ID: ${message.id}`,
-                'No response, or a response with no data, was received from the NCMEC report endpoint.',
+                "No response, or a response with no data, was received from the NCMEC report endpoint.",
             );
             return;
         }
 
-        logger.warn('NCMEC-REPORT-RESULT', `message ID: ${message.id}`, result.data);
+        logger.warn(
+            "NCMEC-REPORT-RESULT",
+            `message ID: ${message.id}`,
+            result.data,
+        );
     }
 
     public isSupportedImageMimeType(mimeType: string): boolean {
         switch (mimeType) {
-            case ('image/gif'):
-            case ('image/jpeg'):
-            case ('image/png'):
-            case ('image/bmp'):
-            case ('image/tiff'):
+            case "image/gif":
+            case "image/jpeg":
+            case "image/png":
+            case "image/bmp":
+            case "image/tiff":
                 return true;
         }
         return false;
@@ -251,6 +374,10 @@ export class PhotoDNACloudService {
      * @param attachment
      */
     private isScannableImageAttachment(attachment: any): boolean {
-        return Boolean(attachment.imageUrl) && Boolean(attachment.fileId) && this.isSupportedImageMimeType(attachment.imageType);
+        return (
+            Boolean(attachment.imageUrl) &&
+            Boolean(attachment.fileId) &&
+            this.isSupportedImageMimeType(attachment.imageType)
+        );
     }
 }

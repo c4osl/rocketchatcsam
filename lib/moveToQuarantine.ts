@@ -1,4 +1,8 @@
-import { ILogger, IMessageBuilder, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import {
+    ILogger,
+    IMessageBuilder,
+    IRead,
+} from "@rocket.chat/apps-engine/definition/accessors";
 
 /**
  * Moves a message to the quarantine room identified by quarantineRoomId (see
@@ -19,7 +23,9 @@ export async function moveToQuarantine(
     attachmentIndexes: Array<number>,
 ): Promise<void> {
     if (!quarantineRoomId) {
-        logger.warn('No usable quarantine channel is configured; removing the flagged attachment(s) instead.');
+        logger.warn(
+            "No usable quarantine channel is configured; removing the flagged attachment(s) instead.",
+        );
         removeAttachments(builder, attachmentIndexes);
         return;
     }
@@ -43,7 +49,10 @@ export async function moveToQuarantine(
  * @param builder
  * @param attachmentIndexes
  */
-function removeAttachments(builder: IMessageBuilder, attachmentIndexes: Array<number>): void {
+function removeAttachments(
+    builder: IMessageBuilder,
+    attachmentIndexes: Array<number>,
+): void {
     const descending = [...attachmentIndexes].sort((a, b) => b - a);
     for (const index of descending) {
         builder.removeAttachment(index);

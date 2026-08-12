@@ -1,7 +1,7 @@
-import { IImageData } from './IImageData';
-import { IMatchOperationStatus } from './IMatchOperationStatus';
-import { IMatchDetails } from './IMatchDetails';
-import { IEvaluateResponse } from './IEvaluateResponse';
+import {IImageData} from "./IImageData";
+import {IMatchOperationStatus} from "./IMatchOperationStatus";
+import {IMatchDetails} from "./IMatchDetails";
+import {IEvaluateResponse} from "./IEvaluateResponse";
 
 export interface IMatchResult {
     Status: IMatchOperationStatus;

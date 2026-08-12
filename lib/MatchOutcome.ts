@@ -1,4 +1,4 @@
-import { IMatchResult } from './IMatchResult';
+import {IMatchResult} from "./IMatchResult";
 
 /**
  * Result of attempting to match a message against the PhotoDNA service.
@@ -7,5 +7,4 @@ import { IMatchResult } from './IMatchResult';
  * that the image is confirmed clean, so it must not be treated as a non-match.
  */
 export type MatchOutcome =
-    | { verified: true; result: IMatchResult }
-    | { verified: false; reason: string };
+    {verified: true; result: IMatchResult} | {verified: false; reason: string};
