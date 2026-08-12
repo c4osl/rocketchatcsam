@@ -1,7 +1,7 @@
 {
     "id": "553209bf-81fc-4210-bebc-8943b40e8fea",
     "version": "0.4.0",
-    "requiredApiVersion": "^1.64.1",
+    "requiredApiVersion": "^1.19.0",
     "iconFile": "icon.png",
     "author": {
         "name": "Jeremy Malcolm / Marco Descher",
