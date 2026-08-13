@@ -60,3 +60,6 @@ Changelog
     - Renamed the app to PhotoDNA Scanning App
     - Updated stale author info
     - Adopted Prettier for code formatting
+- 0.4.2
+    - Removed the previous `apps-compiler` bugfix, restructured `PhotoDNACloudService` to avoid the bug
+    - Restructured files to avoid `rc-apps` commands failing due to it being unaware of test files
