@@ -7,9 +7,9 @@ import type {
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
 import type {IMessage} from "@rocket.chat/apps-engine/definition/messages";
-import {handleMatchingMessage} from "../../lib/handleMatchingMessage";
-import {IMatchResult} from "../../lib/IMatchResult";
-import {PhotoDNACloudService} from "../../lib/PhotoDNACloudService";
+import {handleMatchingMessage} from "../../app/lib/handleMatchingMessage";
+import {IMatchResult} from "../../app/lib/IMatchResult";
+import {PhotoDNACloudService} from "../../app/lib/PhotoDNACloudService";
 
 function makeLogger(): {logger: ILogger; warnCalls: Array<Array<unknown>>} {
     const warnCalls: Array<Array<unknown>> = [];

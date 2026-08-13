@@ -5,7 +5,7 @@ import type {
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
 import type {IRoom} from "@rocket.chat/apps-engine/definition/rooms/IRoom";
-import {resolveQuarantineRoomId} from "../../lib/resolveQuarantineRoomId";
+import {resolveQuarantineRoomId} from "../../app/lib/resolveQuarantineRoomId";
 
 function makeLogger(): {logger: ILogger; errorCalls: Array<Array<unknown>>} {
     const errorCalls: Array<Array<unknown>> = [];

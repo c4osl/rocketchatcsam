@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import {strict as assert} from "node:assert";
-import * as Settings from "../../config/Settings";
+import * as Settings from "../../app/config/Settings";
 
 test("all setting IDs are non-empty strings", () => {
     for (const [key, value] of Object.entries(Settings)) {
