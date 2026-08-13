@@ -10,7 +10,7 @@ Rocket.Chat PhotoDNA Scanning App
 
 This [Rocket.Chat App](https://developer.rocket.chat/docs/rocketchat-apps-engine) validates uploaded images against the [Microsoft PhotoDNA cloud service](https://www.microsoft.com/en-us/photodna), moves them to a quarantine channel or deletes them before they are shown, and, when configured to do so, reports each match to the National Center for Missing and Exploited Children (NCMEC).
 
-For installation, configuration, testing, and troubleshooting instructions, see the [wiki](https://github.com/c4osl/rocketchatcsam/wiki).
+For installation, configuration, contributing, and troubleshooting instructions, see the [wiki](https://github.com/c4osl/rocketchatcsam/wiki).
 
 Acknowledgements
 ================
