@@ -7,7 +7,7 @@ import type {
 } from "@rocket.chat/apps-engine/definition/accessors";
 import type {IMessage} from "@rocket.chat/apps-engine/definition/messages";
 import type {IRoom} from "@rocket.chat/apps-engine/definition/rooms/IRoom";
-import {handleIndeterminateResult} from "../../lib/handleIndeterminateResult";
+import {handleIndeterminateResult} from "../../app/lib/handleIndeterminateResult";
 
 function makeLogger(): {logger: ILogger; errorCalls: Array<Array<unknown>>} {
     const errorCalls: Array<Array<unknown>> = [];

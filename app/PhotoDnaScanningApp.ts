@@ -1,6 +1,4 @@
 import {
-    IAppAccessors,
-    ILogger,
     IConfigurationExtend,
     IEnvironmentRead,
     IRead,
@@ -14,7 +12,6 @@ import {
     IMessage,
     IPreMessageSentModify,
 } from "@rocket.chat/apps-engine/definition/messages";
-import {IAppInfo} from "@rocket.chat/apps-engine/definition/metadata";
 import {ISetting} from "@rocket.chat/apps-engine/definition/settings";
 
 import {IMatchResult} from "./lib/IMatchResult";
@@ -41,7 +38,7 @@ const ROOM_TYPES = Object.freeze({
 });
 
 export class PhotoDnaScanningApp extends App implements IPreMessageSentModify {
-    private photoDnaService: PhotoDNACloudService;
+    private lazyPhotoDnaService: PhotoDNACloudService | undefined;
 
     private quarantineChannel: string;
     private quarantineRoomId: string | undefined;
@@ -49,13 +46,11 @@ export class PhotoDnaScanningApp extends App implements IPreMessageSentModify {
     private watchedRoomsId: Set<string> | undefined;
     private watchDMs: boolean;
 
-    public constructor(
-        info: IAppInfo,
-        logger: ILogger,
-        accessors: IAppAccessors,
-    ) {
-        super(info, logger, accessors);
-        this.photoDnaService = new PhotoDNACloudService();
+    private get photoDnaService(): PhotoDNACloudService {
+        if (!this.lazyPhotoDnaService) {
+            this.lazyPhotoDnaService = new PhotoDNACloudService();
+        }
+        return this.lazyPhotoDnaService;
     }
 
     protected async extendConfiguration(

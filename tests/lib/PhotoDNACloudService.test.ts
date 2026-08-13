@@ -8,7 +8,7 @@ import type {
     ILogger,
 } from "@rocket.chat/apps-engine/definition/accessors";
 import type {IMessage} from "@rocket.chat/apps-engine/definition/messages";
-import {PhotoDNACloudService} from "../../lib/PhotoDNACloudService";
+import {PhotoDNACloudService} from "../../app/lib/PhotoDNACloudService";
 
 function makeLogger(): ILogger {
     return {

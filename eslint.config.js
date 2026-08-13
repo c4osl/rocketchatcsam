@@ -27,6 +27,6 @@ module.exports = tseslint.config(
     // must stay last so it overrides the presets above
     eslintConfigPrettier,
     {
-        ignores: ["dist/**", "node_modules/**", "*.js"],
+        ignores: ["dist/**", "node_modules/**", "*.js", "scripts/**"],
     },
 );

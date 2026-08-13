@@ -7,7 +7,7 @@ import type {
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
 import type {SlashCommandContext} from "@rocket.chat/apps-engine/definition/slashcommands";
-import {PhotoDnaTestConnectionCommand} from "../../commands/PhotoDnaTestConnectionCommand";
+import {PhotoDnaTestConnectionCommand} from "../../app/commands/PhotoDnaTestConnectionCommand";
 
 function makeContext(roles: Array<string>): SlashCommandContext {
     return {

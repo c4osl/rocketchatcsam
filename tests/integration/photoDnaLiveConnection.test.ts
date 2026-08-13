@@ -15,8 +15,8 @@ import type {
 } from "@rocket.chat/apps-engine/definition/accessors";
 import {RequestMethod} from "@rocket.chat/apps-engine/definition/accessors/IHttp";
 import type {IMessage} from "@rocket.chat/apps-engine/definition/messages";
-import {PhotoDNACloudService} from "../../lib/PhotoDNACloudService";
-import {getPhotoDnaTestImageBuffer} from "../../commands/photoDnaTestImage";
+import {PhotoDNACloudService} from "../../app/lib/PhotoDNACloudService";
+import {getPhotoDnaTestImageBuffer} from "../../app/commands/photoDnaTestImage";
 
 const apiKey = process.env.PHOTODNA_API_KEY;
 const testImageFileName = "img_130.jpg";
