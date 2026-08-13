@@ -15,7 +15,7 @@ For installation, configuration, contributing, and troubleshooting instructions,
 Acknowledgements
 ================
 
-This app was originally developed under Prostasia Foundation, which has since ceased operations. This project continues to be supported by the [Center for Online Safety and Liberty (COSL)](https://c4osl.org/), which also funded Prostasia. If you'd like to support COSL's work, see their [Support Us](https://c4osl.org/support-us/) page.
+This app was originally developed under Prostasia Foundation, which has since ceased operations. This project continues to be supported by the [Center for Online Safety and Liberty (COSL)](https://c4osl.org/). If you'd like to support COSL's work, see their [Support Us](https://c4osl.org/support-us/) page.
 
 Changelog
 =========
