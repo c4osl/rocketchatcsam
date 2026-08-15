@@ -23,7 +23,7 @@
     "devDependencies": {
         "@eslint/js": "^9.15.0",
         "@rocket.chat/apps-cli": "^1.14.0",
-        "@rocket.chat/apps-engine": "1.60.0",
+        "@rocket.chat/apps-engine": "1.65.1",
         "@types/node": "18.18.6",
         "eslint": "^9.15.0",
         "eslint-config-prettier": "^10.1.8",
