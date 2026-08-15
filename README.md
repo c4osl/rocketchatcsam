@@ -64,3 +64,7 @@ Changelog
     - Removed the previous `apps-compiler` bugfix, restructured `PhotoDNACloudService` to avoid the bug
     - Restructured files to avoid `rc-apps` commands failing due to it being unaware of test files
     - Generates `app/package.json` at build time instead of relying on a stale cached TypeScript version, which broke the actual Marketplace submission
+- 0.4.4
+    - Removed the apps-cli patch that stopped `requiredApiVersion` from tracking `@rocket.chat/apps-engine`
+    - Set `@rocket.chat/apps-engine` and `requiredApiVersion` to 1.60.0, matching oldest supported RC Server v8.2
+    - Fixed an opaque Internal Error with no diagnostic content on Marketplace submission, caused by those two values drifting apart
