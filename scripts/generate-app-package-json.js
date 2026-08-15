@@ -19,15 +19,22 @@ const rootPackageJson = JSON.parse(
     fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"),
 );
 
+const RELEVANT_DEPENDENCIES = ["@rocket.chat/ui-kit", "@rocket.chat/icons"];
+
 const RELEVANT_DEV_DEPENDENCIES = [
     "typescript",
     "@types/node",
     "@rocket.chat/apps-engine",
-    "@rocket.chat/ui-kit",
 ];
 
 const appPackageJson = {
     name: rootPackageJson.name,
+    dependencies: Object.fromEntries(
+        RELEVANT_DEPENDENCIES.map((name) => [
+            name,
+            rootPackageJson.dependencies[name],
+        ]),
+    ),
     devDependencies: Object.fromEntries(
         RELEVANT_DEV_DEPENDENCIES.map((name) => [
             name,

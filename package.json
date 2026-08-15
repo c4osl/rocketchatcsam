@@ -14,26 +14,22 @@
         "predeploy": "node scripts/generate-app-package-json.js",
         "deploy": "cd app && rc-apps deploy",
         "presubmit": "node scripts/generate-app-package-json.js",
-        "submit": "cd app && rc-apps submit",
-        "postinstall": "patch-package"
+        "submit": "cd app && rc-apps submit"
+    },
+    "dependencies": {
+        "@rocket.chat/icons": "^0.38.0",
+        "@rocket.chat/ui-kit": "^0.36.1"
     },
     "devDependencies": {
         "@eslint/js": "^9.15.0",
         "@rocket.chat/apps-cli": "^1.14.0",
-        "@rocket.chat/apps-engine": "^1.64.1",
-        "@rocket.chat/ui-kit": "~1.1.0",
-        "@types/node": "^22.10.0",
+        "@rocket.chat/apps-engine": "1.60.0",
+        "@types/node": "18.18.6",
         "eslint": "^9.15.0",
         "eslint-config-prettier": "^10.1.8",
-        "patch-package": "^8.0.1",
         "prettier": "^3.9.6",
         "tsx": "^4.23.7",
-        "typescript": "^5.6.0",
+        "typescript": "5.5.4",
         "typescript-eslint": "^8.15.0"
-    },
-    "overrides": {
-        "@rocket.chat/ui-kit": {
-            "typia": "9.7.2"
-        }
     }
 }
